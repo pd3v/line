@@ -1,14 +1,14 @@
 # line
 A tiny command-line music sequencer.
 
-+ Sends MIDI messages to channel 0.
++ Sends MIDI messages to channel 1.
 
 + 60 bpm by default
 
 + 1 instrument
 
 
-###Live coding
+### Live coding
 
 Type in command-line.
 
@@ -26,7 +26,7 @@ Type in command-line.
 
 `e`  
 
-**Go to options:**
+**To display options:**
 
 `o`
  
