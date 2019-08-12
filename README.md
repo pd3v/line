@@ -1,2 +1,2 @@
 # line
-command line music sequencer
+command-line music sequencer
