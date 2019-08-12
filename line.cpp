@@ -19,9 +19,10 @@ const int bpm(const int bpm, const unsigned int barDur) {
 }
 
 void displayOptions() {
-  cout << "..honolulu..1.0..." << endl;
-//  cout << "<[n]+>  pattern" << endl;
+  cout << "..line.1.0..seq..." << endl;
+  cout << "<[n]+>  pattern" << endl;
   cout << "b<[n]+> bpm" << endl;
+  cout << "o       options" << endl;
   cout << "e       exit" << endl;
   cout << ".................." << endl;
 }
@@ -72,7 +73,7 @@ int main(int argc, char const *argv[]) {
           noteMessage[2] = (_n == 0) ? 0 : 127;
           midiOut.sendMessage(&noteMessage);
           
-          std::this_thread::sleep_for(milliseconds(static_cast<unsigned long>(partial/subPattern.size())));
+          std::this_thread::sleep_for(milliseconds(partial/subPattern.size()));
 
           noteMessage[0] = 128;
           noteMessage[1] = _n;
@@ -102,6 +103,7 @@ int main(int argc, char const *argv[]) {
           exit = true;
           midiOut.closePort();
       } else {
+        // parser
         regex_search(op, matchExp, regExp);
         sregex_iterator pos(op.cbegin(), op.cend(), regExp);
         sregex_iterator end;
@@ -109,11 +111,10 @@ int main(int argc, char const *argv[]) {
         if (pos == end) {
           vector<vector<int>> tempPattern{};
           istringstream iss(op);
+          bool subBarFlag = 0;
+          vector<int> subPatt{};
           
           vector<string> results((istream_iterator<string>(iss)), istream_iterator<string>());
-            
-          bool subBarFlag = 0;
-          vector<int> subPatt;
           
           for_each(results.begin(), results.end(),
             [&](string i) {
@@ -143,8 +144,8 @@ int main(int argc, char const *argv[]) {
           
           if (!tempPattern.empty()) {
             pattern = tempPattern;
+            
             soundingThread = true;
-
             cv.notify_one();
           }
         }
