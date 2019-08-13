@@ -1,5 +1,5 @@
 # line
-A tiny command-line music sequencer.
+A tiny command-line music sequencer for live coding.
 
 + Sends MIDI messages to channel 1.
 
