@@ -40,7 +40,7 @@ int main(int argc, char const *argv[]) {
   const string prompt = "\nh:>";
   string op;
   
-  mutex mtx;
+  mutex mtxWait, mtxPattern;
   condition_variable cv;
   
   smatch matchExp;
@@ -57,9 +57,10 @@ int main(int argc, char const *argv[]) {
     int _n;
     unsigned long partial = 0;
     
-    unique_lock<mutex> lck(mtx);
-    cv.wait(lck, [&](){return soundingThread == true;});
+    unique_lock<mutex> lckWait(mtxWait);
+    cv.wait(lckWait, [&](){return soundingThread == true;});
     
+    lock_guard<mutex> lckPattern(mtxPattern);
     while (soundingThread) {
       if (!pattern.empty())
         partial = barDur/pattern.size();
