@@ -28,7 +28,7 @@ Type in command-line.
 
 `e`  
 
-**To display options:**
+**To display commands:**
 
-`o`
+`c`
  
