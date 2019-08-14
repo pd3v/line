@@ -91,7 +91,7 @@ int main(int argc, char const *argv[]) {
     getline(cin, op);
     
     if (!op.empty()) {
-      if (op.at(0) == 'o') {
+      if (op.at(0) == 'c') {
         displayOptions();
       } else if (op.at(0) == 'b') {
         try {
