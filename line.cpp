@@ -20,10 +20,10 @@ const int bpm(const int bpm, const unsigned int barDur) {
 
 void displayOptions() {
   cout << "..line.1.0..seq..." << endl;
-  cout << "<[n]+>  pattern" << endl;
-  cout << "b<[n]+> bpm" << endl;
-  cout << "o       options" << endl;
-  cout << "e       exit" << endl;
+  cout << "<[n]...>  pattern" << endl;
+  cout << "b<[n]...> bpm" << endl;
+  cout << "c         commands" << endl;
+  cout << "e         exit" << endl;
   cout << ".................." << endl;
 }
 
@@ -97,12 +97,12 @@ int main(int argc, char const *argv[]) {
         try {
           barDur = bpm(std::stoi(op.substr(1,op.size()-1)),refBarDur);
         } catch (...) {
-          cout << "Invalid bpm value." << endl;
+          cerr << "Invalid bpm value." << endl;
         }
       } else if (op.at(0) == 'e') {
+          pattern.clear();
           soundingThread = false;
           exit = true;
-          midiOut.closePort();
       } else {
         // parser
         regex_search(op, matchExp, regExp);
