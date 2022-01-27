@@ -1,3 +1,9 @@
+//
+//  line - tiny command-line MIDI sequencer for live coding
+//
+//  Created by @pd3v_
+//
+
 #include <iostream>
 #include <string>
 #include <chrono>
