@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include "RtMidi.h"
 #include <chrono>
 #include <future>
 #include <mutex>
@@ -8,9 +7,9 @@
 #include <regex>
 #include <stdexcept>
 #include <sstream>
+#include "externals/rtmidi/RtMidi.h"
 
 using namespace std;
-using namespace chrono;
 
 const float DEFAULT_BPM = 60.0;
 
@@ -19,15 +18,17 @@ const int bpm(const int bpm, const unsigned int barDur) {
 }
 
 void displayOptionsMenu() {
-  cout << "..line 0.1 midi seq.." << endl;
-  cout << "<[n]...>  pattern" << endl;
-  cout << "b<[n]...> bpm" << endl;
-  cout << "c         commands" << endl;
-  cout << "e         exit" << endl;
-  cout << "....................." << endl;
+  cout << "---------------------" << endl;
+  cout << "  line 0.1 midi seq  " << endl;
+  cout << "---------------------" << endl;
+  cout << "..<[n] >   pattern   " << endl;
+  cout << "..b<[n]>   bpm       " << endl;
+  cout << "..m        this menu " << endl;
+  cout << "..e        exit      " << endl;
+  cout << "---------------------" << endl;
 }
 
-int main(int argc, char const *argv[]) {
+int main() {
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
 
@@ -37,8 +38,8 @@ int main(int argc, char const *argv[]) {
   vector<unsigned char> noteMessage;
   vector<vector<int>> pattern{};
   
-  const string prompt = "\nh:>";
-  string op;
+  // const string prompt = "\nh:>";s
+  string opt;
   
   mutex mtxWait, mtxPattern;
   condition_variable cv;
@@ -54,10 +55,10 @@ int main(int argc, char const *argv[]) {
   noteMessage.push_back(0);
   
   auto fut = async(launch::async, [&](){
-    int _n;
     unsigned long partial = 0;
+    vector<vector<int>> _patt{};
     
-    // just waiting for the fisrt pattern 
+    // waiting for live coder's first pattern 
     unique_lock<mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
     lock_guard<mutex> lckPattern(mtxPattern);
@@ -66,80 +67,78 @@ int main(int argc, char const *argv[]) {
       if (!pattern.empty())
         partial = barDur/pattern.size();
       
-      for (auto& subPattern : pattern) {
+      _patt = pattern;
+
+      for (auto& subPattern : _patt) {
         for (auto& n : subPattern) {
-          _n = n;
-          
           noteMessage[0] = 144;
-          noteMessage[1] = _n;
-          noteMessage[2] = (_n == 0) ? 0 : 127;
+          noteMessage[1] = n;
+          noteMessage[2] = (n == 0) ? 0 : 127;
           midiOut.sendMessage(&noteMessage);
           
-          std::this_thread::sleep_for(milliseconds(partial/subPattern.size()));
+          std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
 
           noteMessage[0] = 128;
-          noteMessage[1] = _n;
+          noteMessage[1] = n;
           noteMessage[2] = 0;
           midiOut.sendMessage(&noteMessage);
         }
       }
     }
+    return "line is off.\n";
   });
   
   displayOptionsMenu();
   
   while (!exit) {
-    getline(cin, op);
+    getline(cin, opt);
     
-    if (!op.empty()) {
-      if (op.at(0) == 'c') {
+    if (!opt.empty()) {
+      if (opt.at(0) == 'm') {
         displayOptionsMenu();
-      } else if (op.at(0) == 'b') {
+      } else if (opt.at(0) == 'b') {
         try {
-          barDur = bpm(std::stoi(op.substr(1,op.size()-1)),refBarDur);
+          barDur = bpm(std::stoi(opt.substr(1,opt.size()-1)),refBarDur);
         } catch (...) {
           cerr << "Invalid bpm value." << endl;
         }
-      } else if (op.at(0) == 'e') {
+      } else if (opt.at(0) == 'e') {
           pattern.clear();
           soundingThread = false;
           exit = true;
+          std::cout << fut.get();
       } else {
         // parser
-        regex_search(op, matchExp, regExp);
-        sregex_iterator pos(op.cbegin(), op.cend(), regExp);
+        regex_search(opt, matchExp, regExp);
+        sregex_iterator pos(opt.cbegin(), opt.cend(), regExp);
         sregex_iterator end;
         
         if (pos == end) {
           vector<vector<int>> tempPattern{};
-          istringstream iss(op);
+          istringstream iss(opt);
           bool subBarFlag = 0;
           vector<int> subPatt{};
           
           vector<string> results((istream_iterator<string>(iss)), istream_iterator<string>());
           
-          for_each(results.begin(), results.end(),
-            [&](string i) {
+          for_each(results.begin(),results.end(),[&](string i) {
               string s;
               
               if (i.substr(0,1) == ".") {
                 s = i.substr(1,i.back());
                 subPatt.push_back(stoi(s));
                 subBarFlag = true;
-                
               } else if (i.substr(i.length()-1,i.length()) == ".") {
                 s = i.substr(0,i.length()-1);
                 subPatt.push_back(stoi(s));
                 tempPattern.push_back(subPatt);
                 subPatt.clear();
                 subBarFlag = false;
-                
               } else {
                 if (subBarFlag == true)
                   subPatt.push_back(stoi(i));
                 else if (subBarFlag == false)
                   tempPattern.push_back({stoi(i)});
-                
               }
             }
           );
