@@ -18,13 +18,13 @@ const int bpm(const int bpm, const unsigned int barDur) {
   return DEFAULT_BPM/bpm*barDur;
 }
 
-void displayOptions() {
-  cout << "..line.1.0..seq..." << endl;
+void displayOptionsMenu() {
+  cout << "..line 0.1 midi seq.." << endl;
   cout << "<[n]...>  pattern" << endl;
   cout << "b<[n]...> bpm" << endl;
   cout << "c         commands" << endl;
   cout << "e         exit" << endl;
-  cout << ".................." << endl;
+  cout << "....................." << endl;
 }
 
 int main(int argc, char const *argv[]) {
@@ -57,10 +57,11 @@ int main(int argc, char const *argv[]) {
     int _n;
     unsigned long partial = 0;
     
+    // just waiting for the fisrt pattern 
     unique_lock<mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
-    
     lock_guard<mutex> lckPattern(mtxPattern);
+
     while (soundingThread) {
       if (!pattern.empty())
         partial = barDur/pattern.size();
@@ -85,14 +86,14 @@ int main(int argc, char const *argv[]) {
     }
   });
   
-  displayOptions();
+  displayOptionsMenu();
   
   while (!exit) {
     getline(cin, op);
     
     if (!op.empty()) {
       if (op.at(0) == 'c') {
-        displayOptions();
+        displayOptionsMenu();
       } else if (op.at(0) == 'b') {
         try {
           barDur = bpm(std::stoi(op.substr(1,op.size()-1)),refBarDur);
