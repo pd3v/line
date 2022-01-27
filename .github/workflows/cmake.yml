@@ -8,32 +8,32 @@ on:
     types: [closed]
 
 jobs:
-  release_linux:
-    name: linux line release
-    runs-on: ubuntu-latest
+#  release_linux:
+#    name: linux line release
+#    runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v2
+#    steps:
+#      - uses: actions/checkout@v2
 
-      - name: Create Build Directory
-        run: cmake -E make_directory ${{github.workspace}}/build
+#      - name: Create Build Directory
+#        run: cmake -E make_directory ${{github.workspace}}/build
 
-      - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_BUILD_TESTING=OFF
+#      - name: Configure CMake
+#        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_BUILD_TESTING=OFF
 
-      - name: Build
-        run: cmake --build ./build --config Release
+#      - name: Build
+#        run: cmake --build ./build --config Release
 
-      - name: Create Artifact
-        run: |
-          mkdir release
-          cp build/line release/line
+#      - name: Create Artifact
+#        run: |
+#          mkdir release
+#          cp build/line release/line
       
-      - name: Publish Linux Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: line linux release
-          path: release
+#      - name: Publish Linux Artifact
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: line linux release
+#          path: release
 
   # Build for macOs is working
   release_macos:
@@ -47,7 +47,7 @@ jobs:
         run: cmake -E make_directory ${{github.workspace}}/build
 
       - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF
+        run: cmake -DCMAKE_BUILD_TYPE=Release RTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF ..
 
       - name: Build
         run: cmake --build ./build --config Release
@@ -55,7 +55,7 @@ jobs:
       - name: Create Artifact
         run: |
           mkdir release
-          cp build/line release/line
+          cp build/ release/
       
       - name: Publish MacOS Artifact
         uses: actions/upload-artifact@v2
