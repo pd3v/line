@@ -2,14 +2,14 @@ name: Release Build
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
     types: [closed]
 
 jobs:
   release_linux:
-    name: linux cppandaction release
+    name: linux line release
     runs-on: ubuntu-latest
 
     steps:
@@ -27,17 +27,17 @@ jobs:
       - name: Create Artifact
         run: |
           mkdir release
-          cp build/main release/main
+          cp build/line release/line
       
       - name: Publish Linux Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: cppandaction linux release
+          name: line linux release
           path: release
 
   # Build for macOs is working
   release_macos:
-    name: macOS cppandaction release
+    name: macOS line release
     runs-on: macos-11
 
     steps:
@@ -55,12 +55,12 @@ jobs:
       - name: Create Artifact
         run: |
           mkdir release
-          cp build/main release/main
+          cp build/line release/line
       
       - name: Publish MacOS Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: cppandaction macOS release
+          name: line macOS release
           path: release
 
   # Artifac creation not working
