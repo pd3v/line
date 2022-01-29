@@ -29,6 +29,7 @@ void displayOptionsMenu() {
   cout << "---------------------" << endl;
   cout << "..<[n] >   pattern   " << endl;
   cout << "..b<[n]>   bpm       " << endl;
+  cout << "..c<[n]>   midi ch" << endl;
   cout << "..m        this menu " << endl;
   cout << "..e        exit      " << endl;
   cout << "---------------------" << endl;
@@ -43,6 +44,7 @@ int main() {
   
   vector<unsigned char> noteMessage;
   vector<vector<int>> pattern{};
+  uint8_t ch = 0;
   
   // const string prompt = "\nh:>";s
   string opt;
@@ -77,14 +79,14 @@ int main() {
 
       for (auto& subPattern : _patt) {
         for (auto& n : subPattern) {
-          noteMessage[0] = 144;
+          noteMessage[0] = 144+ch;
           noteMessage[1] = n;
           noteMessage[2] = (n == 0) ? 0 : 127;
           midiOut.sendMessage(&noteMessage);
           
           std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
 
-          noteMessage[0] = 128;
+          noteMessage[0] = 128+ch;
           noteMessage[1] = n;
           noteMessage[2] = 0;
           midiOut.sendMessage(&noteMessage);
@@ -102,6 +104,8 @@ int main() {
     if (!opt.empty()) {
       if (opt.at(0) == 'm') {
         displayOptionsMenu();
+      } else if (opt.at(0) == 'c') {
+        ch = std::stoi(opt.substr(1,opt.size()-1))-1;
       } else if (opt.at(0) == 'b') {
         try {
           barDur = bpm(std::stoi(opt.substr(1,opt.size()-1)),refBarDur);
