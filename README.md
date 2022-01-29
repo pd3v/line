@@ -1,33 +1,42 @@
 # line
 #### A tiny command-line midi sequencer for live coding.
 
-+ Sends MIDI messages to a channel chosen by you.
++ Sends MIDI messages to a chosen MIDI channel. Default is 1.
 
 + 1 instrument
 
-In command-line, type:
+### To build and run *line*
 
-### To run *line*
++ Go to `line`'s directory
 
-`./line` + Enter
++ In command-line, type and Enter:
 
-### Live coding
++ ./build.sh
+
++ ./line
+
+**Now run your favorite synth, sampler, DAW, or other MIDI receiver!**
+
+## Manual
+
+With `live` running, type:
+
 
 **To send a MIDI message:**
 
-4 1/4 midi notes
+// 4 1/4 midi notes
 
-`45 46 47 48` 
+`45 46 47 48`
 
-1/4 1/8 1/8 1/4 1/4 notes
+// 1/4 1/8 1/8 1/4 1/4 notes
 
 `45 .34 35. 48 49` 
 
-0 for a silent note
+// 0 for a silent note
 
 `36 .37 38. 41 .0 46.` 
 
-**To set MIDI a channel:**  
+**To set a MIDI channel:**  
 
 channel 2
 
