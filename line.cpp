@@ -19,7 +19,7 @@ using namespace std;
 
 const float DEFAULT_BPM = 60.0;
 const string PROMPT = "line$ ";
-const string VERSION = "0.2";
+const string VERSION = "0.1";
 
 const int bpm(const int bpm, const unsigned int barDur) {
   return DEFAULT_BPM/bpm*barDur;
