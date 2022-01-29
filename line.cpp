@@ -57,6 +57,7 @@ int main() {
   
   bool soundingThread = false;
   bool exit = false;
+  bool syntaxError = false;
     
   noteMessage.push_back(0);
   noteMessage.push_back(0);
@@ -133,26 +134,35 @@ int main() {
           
           for_each(results.begin(),results.end(),[&](string i) {
               string s;
-              
-              if (i.substr(0,1) == ".") {
-                s = i.substr(1,i.back());
-                subPatt.push_back(stoi(s));
-                subBarFlag = true;
-              } else if (i.substr(i.length()-1,i.length()) == ".") {
-                s = i.substr(0,i.length()-1);
-                subPatt.push_back(stoi(s));
-                tempPattern.push_back(subPatt);
-                subPatt.clear();
-                subBarFlag = false;
-              } else {
-                if (subBarFlag == true)
-                  subPatt.push_back(stoi(i));
-                else if (subBarFlag == false)
-                  tempPattern.push_back({stoi(i)});
+
+              try {
+                if (i.substr(0,1) == ".") {
+                  s = i.substr(1,i.back());
+                  subPatt.push_back(stoi(s));
+                  subBarFlag = true;
+                } else if (i.substr(i.length()-1,i.length()) == ".") {
+                  s = i.substr(0,i.length()-1);
+                  subPatt.push_back(stoi(s));
+                  tempPattern.push_back(subPatt);
+                  subPatt.clear();
+                  subBarFlag = false;
+                } else {
+                  if (subBarFlag == true)
+                    subPatt.push_back(stoi(i));
+                  else if (subBarFlag == false)
+                    tempPattern.push_back({stoi(i)});
+                }
+              } catch(...) { 
+                syntaxError = true;
               }
             }
           );
           
+          if (syntaxError) {
+            tempPattern.clear();
+            syntaxError = false;
+          }
+
           if (!tempPattern.empty()) {
             pattern = tempPattern;
             
