@@ -46,7 +46,7 @@ int main() {
   vector<vector<int>> pattern{};
   uint8_t ch = 0;
   
-  // const string prompt = "\nh:>";s
+  const string PROMPT = "line$";
   string opt;
   
   mutex mtxWait, mtxPattern;
@@ -100,6 +100,7 @@ int main() {
   displayOptionsMenu();
   
   while (!exit) {
+    std::cout << PROMPT;
     getline(cin, opt);
     
     if (!opt.empty()) {
