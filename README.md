@@ -1,7 +1,7 @@
 # line
 #### A tiny command-line midi sequencer for live coding.
 
-+ Sends MIDI messages to channel 1.
++ Sends MIDI messages to a channel chosen by you.
 
 + 1 instrument
 
@@ -26,6 +26,12 @@ In command-line, type:
 0 for a silent note
 
 `36 .37 38. 41 .0 46.` 
+
+**To set MIDI a channel:**  
+
+channel 2
+
+`c2`
 
 **To set bpm:**  
 
