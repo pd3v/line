@@ -55,7 +55,7 @@ jobs:
       - name: Create Artifact
         run: |
           mkdir release
-          cp build/ release/
+          cp build/line release/line
       
       - name: Publish MacOS Artifact
         uses: actions/upload-artifact@v2
