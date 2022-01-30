@@ -1,0 +1,31 @@
+name: Release Build
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+    types: [closed]
+
+jobs:
+  # Build for macOs is working
+  release_macos:
+    name: macOS line release
+    runs-on: macos-11
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run build.sh script
+        run: ./build.sh
+        
+      - name: Create Artifact
+        run: |
+          mkdir release
+          cp build/line release/line
+      
+      - name: Publish MacOS Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: line macOS release
+          path: release
