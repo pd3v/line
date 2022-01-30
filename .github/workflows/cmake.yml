@@ -47,7 +47,8 @@ jobs:
         run: cmake -E make_directory ${{github.workspace}}/build
 
       - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF 
+        run: cmake -S . -B build -DRTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF CMAKE_BUILD_TYPE=Release
+        # run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF 
 
       - name: Build
         run: cmake --build ./build --config Release
