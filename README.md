@@ -5,6 +5,8 @@
 
 + 1 instrument
 
+![line_screenshot](https://github.com/pd3v/wide/blob/develop/line01.png)
+
 ### To build and run *line*
 
 + Go to `line`'s directory
