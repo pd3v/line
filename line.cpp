@@ -18,7 +18,7 @@
 using namespace std;
 
 const float DEFAULT_BPM = 60.0;
-const string PROMPT = "line$ ";
+const string PROMPT = "line $ ";
 const string VERSION = "0.1";
 
 const int bpm(const int bpm, const unsigned int barDur) {
@@ -67,33 +67,36 @@ int main() {
   auto fut = async(launch::async, [&](){
     unsigned long partial = 0;
     vector<vector<int>> _patt{};
-    
+    uint8_t _ch = 0;
+
     // waiting for live coder's first pattern 
     unique_lock<mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
     lock_guard<mutex> lckPattern(mtxPattern);
-
+    
     while (soundingThread) {
-      if (!pattern.empty())
+      if (!pattern.empty()) {
         partial = barDur/pattern.size();
       
-      _patt = pattern;
+        _patt = pattern;
+        _ch = ch;
 
-      for (auto& subPattern : _patt) {
-        for (auto& n : subPattern) {
-          noteMessage[0] = 144+ch;
-          noteMessage[1] = n;
-          noteMessage[2] = (n == 0) ? 0 : 127;
-          midiOut.sendMessage(&noteMessage);
-          
-          std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
+        for (auto& subPattern : _patt) {
+          for (auto& n : subPattern) {
+            noteMessage[0] = 144+_ch;
+            noteMessage[1] = n;
+            noteMessage[2] = (n == 0) ? 0 : 127;
+            midiOut.sendMessage(&noteMessage);
+            
+            std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
 
-          noteMessage[0] = 128+ch;
-          noteMessage[1] = n;
-          noteMessage[2] = 0;
-          midiOut.sendMessage(&noteMessage);
+            noteMessage[0] = 128+_ch;
+            noteMessage[1] = n;
+            noteMessage[2] = 0;
+            midiOut.sendMessage(&noteMessage);
+          }
         }
-      }
+      } else break;
     }
     return "line is off.\n";
   });
@@ -108,7 +111,12 @@ int main() {
       if (opt.at(0) == 'm') {
         displayOptionsMenu();
       } else if (opt.at(0) == 'c') {
-        ch = std::stoi(opt.substr(1,opt.size()-1))-1;
+        try {
+          ch = std::stoi(opt.substr(1,opt.size()-1))-1;
+        }
+        catch (...) {
+          cerr << "Invalid channel value." << endl; 
+        }
       } else if (opt.at(0) == 'b') {
         try {
           barDur = bpm(std::stoi(opt.substr(1,opt.size()-1)),refBarDur);
@@ -117,9 +125,10 @@ int main() {
         }
       } else if (opt.at(0) == 'e') {
           pattern.clear();
-          soundingThread = false;
-          exit = true;
+          soundingThread = true;
+          cv.notify_one();
           std::cout << fut.get();
+          exit = true;
       } else {
         // parser
         regex_search(opt, matchExp, regExp);
