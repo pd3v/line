@@ -5,7 +5,7 @@
 
 + 1 instrument
 
-![line_screenshot](https://github.com/pd3v/line/blob/develop/line01.png)
+![line_screenshot](https://github.com/pd3v/line/blob/develop/line0.1.png)
 
 ### To build and run *line*
 
