@@ -8,6 +8,36 @@ on:
     types: [closed]
 
 jobs:
+  # Build for macOs
+  release_macos:
+    name: macOS line release
+    runs-on: macos-11
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Create Build Directory
+        run: cmake -E make_directory ${{github.workspace}}/build
+
+      - name: Configure CMake
+        # run: cmake -S . -B build -DRTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF CMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF 
+
+      - name: Build
+        run: cmake --build ./build --config Release
+
+      # - name: Create Artifact
+      #   run: |
+      #     mkdir release
+      #     cp build/line release/line
+      
+      # - name: Publish MacOS Artifact
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: line macOS release
+      #     path: release
+
+# ------------------
 #  release_linux:
 #    name: linux line release
 #    runs-on: ubuntu-latest
@@ -35,60 +65,31 @@ jobs:
 #          name: line linux release
 #          path: release
 
-  # Build for macOs is working
-  release_macos:
-    name: macOS line release
-    runs-on: macos-11
+# Artifac creation not working
+# release_windows:
+#   name: windows cppandaction release
+#   runs-on: windows-latest
 
-    steps:
-      - uses: actions/checkout@v2
+#   steps:
+#     - uses: actions/checkout@v2
 
-      - name: Create Build Directory
-        run: cmake -E make_directory ${{github.workspace}}/build
+#     - name: Create Build Directory
+#       run: cmake -E make_directory ${{github.workspace}}/build
 
-      - name: Configure CMake
-        run: cmake -S . -B build -DRTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF CMAKE_BUILD_TYPE=Release
-        # run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF 
+#     - name: Configure CMake
+#       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
-        run: cmake --build ./build --config Release
+#     - name: Build
+#       run: cmake --build ./build --config Release
 
-      - name: Create Artifact
-        run: |
-          mkdir release
-          cp build/line release/line
-      
-      - name: Publish MacOS Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: line macOS release
-          path: release
-
-  # Artifac creation not working
-  # release_windows:
-  #   name: windows cppandaction release
-  #   runs-on: windows-latest
-
-  #   steps:
-  #     - uses: actions/checkout@v2
-
-  #     - name: Create Build Directory
-  #       run: cmake -E make_directory ${{github.workspace}}/build
-
-  #     - name: Configure CMake
-  #       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-
-  #     - name: Build
-  #       run: cmake --build ./build --config Release
-
-  #     - name: Create Artifact
-  #       run: |
-  #         mkdir release
-  #         copy build/main.exe release/main.exe
-      
-  #     - name: Publish Windows Artifact
-  #       uses: actions/upload-artifact@v2
-  #       with:
-  #         name: cppandaction windows release
-  #         path: release
-  # Artifac creation not working --      
+#     - name: Create Artifact
+#       run: |
+#         mkdir release
+#         copy build/main.exe release/main.exe
+    
+#     - name: Publish Windows Artifact
+#       uses: actions/upload-artifact@v2
+#       with:
+#         name: cppandaction windows release
+#         path: release
+# Artifac creation not working --      
