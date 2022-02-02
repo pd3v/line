@@ -12,12 +12,12 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/)
 
 target_include_directories(
   ${PROJECT_NAME} 
-  PRIVATE externals/rtmidi/
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
 )
 
 target_link_directories(
   ${PROJECT_NAME}
-  PRIVATE externals/rtmidi/
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
 )
 
 target_link_libraries(
