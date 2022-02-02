@@ -31,10 +31,21 @@ void displayOptionsMenu() {
   cout << "---------------------" << endl;
   cout << "..<[n] >   pattern   " << endl;
   cout << "..b<[n]>   bpm       " << endl;
-  cout << "..c<[n]>   midi ch" << endl;
+  cout << "..c<[n]>   midi ch   " << endl;
   cout << "..m        this menu " << endl;
   cout << "..e        exit      " << endl;
   cout << "---------------------" << endl;
+}
+
+bool muted = false;
+
+void mute() {
+  std::cout << __FUNCTION__ << std::endl;
+  muted = true;
+}
+
+void unmute() {
+  muted = false;
 }
 
 int main() {
@@ -85,7 +96,7 @@ int main() {
           for (auto& n : subPattern) {
             noteMessage[0] = 144+_ch;
             noteMessage[1] = n;
-            noteMessage[2] = (n == 0) ? 0 : 127;
+            noteMessage[2] = ((n == 0) || muted) ? 0 : 127;
             midiOut.sendMessage(&noteMessage);
             
             std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
@@ -123,12 +134,15 @@ int main() {
         } catch (...) {
           cerr << "Invalid bpm value." << endl;
         }
-      } else if (opt.at(0) == 'e') {
+      } else if (opt == "e") {
           pattern.clear();
           soundingThread = true;
           cv.notify_one();
           std::cout << fut.get();
           exit = true;
+      } else if (opt == "mute") {
+          std::cout << __FUNCTION__ << std::endl;
+          mute();
       } else {
         // parser
         regex_search(opt, matchExp, regExp);
