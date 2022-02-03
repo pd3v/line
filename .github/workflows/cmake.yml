@@ -8,7 +8,6 @@ on:
     types: [closed]
 
 jobs:
-  # Build for macOs
   release_macos:
     name: macOS line release
     runs-on: macos-11
@@ -18,7 +17,7 @@ jobs:
 
     - name: Checkout submodules
       run: git submodule update --init --recursive
-      
+
     - name: Create Build Directory
       run: cmake -E make_directory ${{github.workspace}}/build
 
