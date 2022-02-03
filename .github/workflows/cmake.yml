@@ -14,28 +14,31 @@ jobs:
     runs-on: macos-11
 
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: Create Build Directory
-        run: cmake -E make_directory ${{github.workspace}}/build
-
-      - name: Configure CMake
-        # run: cmake -S . -B build -DRTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF CMAKE_BUILD_TYPE=Release
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF 
-
-      # - name: Build
-      #  run: cmake --build ./build --config Release
-
-      # - name: Create Artifact
-      #   run: |
-      #     mkdir release
-      #     cp build/line release/line
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
       
-      # - name: Publish MacOS Artifact
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: line macOS release
-      #     path: release
+    - name: Create Build Directory
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: Configure CMake
+      # run: cmake -S . -B build -DRTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF CMAKE_BUILD_TYPE=Release
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF 
+
+    - name: Build
+      run: cmake --build ./build --config Release
+
+    - name: Create Artifact
+      run: |
+        mkdir release
+        cp build/line release/line
+    
+    - name: Publish MacOS Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: line macOS release
+        path: release
 
 # ------------------
 #  release_linux:
