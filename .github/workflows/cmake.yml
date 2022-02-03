@@ -32,6 +32,7 @@ jobs:
       run: |
         mkdir release
         cp build/line release/line
+        cp -r build/externals release/externals
     
     - name: Publish MacOS Artifact
       uses: actions/upload-artifact@v2
