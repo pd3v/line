@@ -28,4 +28,4 @@ target_link_libraries(
   LINK_PRIVATE rtmidi
 )
 
-# install(TARGETS rtmidi)
+install(TARGETS rtmidi)
