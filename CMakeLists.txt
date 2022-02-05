@@ -27,5 +27,3 @@ target_link_libraries(
   ${PROJECT_NAME}
   LINK_PRIVATE rtmidi
 )
-
-install(TARGETS rtmidi)
