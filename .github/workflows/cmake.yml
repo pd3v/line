@@ -38,7 +38,6 @@ jobs:
       with:
         name: line macOS release
         path: release
-
   release_linux:
     name: line linux release
     runs-on: ubuntu-latest
@@ -53,7 +52,6 @@ jobs:
       run: cmake -E make_directory ${{github.workspace}}/build
 
     - name: Configure CMake
-    #  run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_BUILD_TESTING=OFF
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
     - name: Build
