@@ -39,11 +39,11 @@ jobs:
         name: line macOS release
         path: release
 
- release_linux:
-   name: line linux release
-   runs-on: ubuntu-latest
+  release_linux:
+    name: line linux release
+    runs-on: ubuntu-latest
 
-   steps:
+    steps:
     - uses: actions/checkout@v2
 
     - name: Checkout submodules
