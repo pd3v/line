@@ -38,8 +38,6 @@ jobs:
       with:
         name: line macOS release
         path: release
-
-# ------------------
  release_linux:
    name: line linux release
    runs-on: ubuntu-latest
