@@ -13,6 +13,7 @@
 #include <regex>
 #include <stdexcept>
 #include <sstream>
+#include <stdlib.h>
 #include "externals/rtmidi/RtMidi.h"
 
 using namespace std;
@@ -31,10 +32,11 @@ void displayOptionsMenu() {
   cout << "---------------------" << endl;
   cout << "..<[n] >   pattern   " << endl;
   cout << "..b<[n]>   bpm       " << endl;
-  cout << "..c<[n]>   midi ch" << endl;
+  cout << "..c<[n]>   midi ch   " << endl;
   cout << "..m        this menu " << endl;
   cout << "..e        exit      " << endl;
   cout << "---------------------" << endl;
+  if (rand()%20+1 == 1) cout << "          author:pd3v" << endl;
 }
 
 int main() {
