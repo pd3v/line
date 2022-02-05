@@ -9,8 +9,9 @@ on:
 
 jobs:
   release_macos:
-    name: macOS line release
-    runs-on: macos-11
+    name: line macOS release
+    # runs-on: macos-11
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -22,7 +23,6 @@ jobs:
       run: cmake -E make_directory ${{github.workspace}}/build
 
     - name: Configure CMake
-      # run: cmake -S . -B build -DRTMIDI_API_JACK=OFF RTMIDI_BUILD_TESTING=OFF CMAKE_BUILD_TYPE=Release
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
     - name: Build
@@ -32,7 +32,7 @@ jobs:
       run: |
         mkdir release
         cp build/line release/line
-        cp -r build/externals release/externals
+        # cp -r build/externals release/externals
     
     - name: Publish MacOS Artifact
       uses: actions/upload-artifact@v2
