@@ -32,7 +32,6 @@ jobs:
       run: |
         mkdir release
         cp build/line release/line
-        # cp -r build/externals release/externals
     
     - name: Publish MacOS Artifact
       uses: actions/upload-artifact@v2
@@ -41,32 +40,36 @@ jobs:
         path: release
 
 # ------------------
-#  release_linux:
-#    name: linux line release
-#    runs-on: ubuntu-latest
+ release_linux:
+   name: line linux release
+   runs-on: ubuntu-latest
 
-#    steps:
-#      - uses: actions/checkout@v2
+   steps:
+     - uses: actions/checkout@v2
 
-#      - name: Create Build Directory
-#        run: cmake -E make_directory ${{github.workspace}}/build
+     - name: Checkout submodules
+      run: git submodule update --init --recursive
 
-#      - name: Configure CMake
-#        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_BUILD_TESTING=OFF
+     - name: Create Build Directory
+       run: cmake -E make_directory ${{github.workspace}}/build
 
-#      - name: Build
-#        run: cmake --build ./build --config Release
+     - name: Configure CMake
+      #  run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release RTMIDI_BUILD_TESTING=OFF
+       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
-#      - name: Create Artifact
-#        run: |
-#          mkdir release
-#          cp build/line release/line
+     - name: Build
+       run: cmake --build ./build --config Release
+
+     - name: Create Artifact
+       run: |
+         mkdir release
+         cp build/line release/line
       
-#      - name: Publish Linux Artifact
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: line linux release
-#          path: release
+     - name: Publish Linux Artifact
+       uses: actions/upload-artifact@v2
+       with:
+         name: line linux release
+         path: release
 
 # Artifac creation not working
 # release_windows:
