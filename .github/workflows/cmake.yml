@@ -27,6 +27,7 @@ jobs:
     - name: Configure CMake
       if: matrix.os == 'macos-latest'
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
+    - name: Configure CMake
       if: matrix.os == 'ubuntu-latest'
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=ON -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
