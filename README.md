@@ -21,7 +21,7 @@
 
 ## Manual
 
-With `live` running, type:
+With `line` running, type:
 
 
 **To send a MIDI message:**
