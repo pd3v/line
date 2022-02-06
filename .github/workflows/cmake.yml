@@ -24,11 +24,13 @@ jobs:
     - name: Create Build Directory
       run: cmake -E make_directory ${{github.workspace}}/build
 
+    if: matrix.os == 'macos-latest'
     - name: Configure CMake
-      if: matrix.os == 'macos-latest'
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
+
+    if: matrix.os == 'ubuntu-latest'
     - name: Configure CMake
-      if: matrix.os == 'ubuntu-latest'
+      # if: matrix.os == 'ubuntu-latest'
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=ON -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
     - name: Build
@@ -39,7 +41,6 @@ jobs:
         mkdir release
         cp build/line release/line
 
-    # if: matrix.os == 'macos-latest' 
     - name: Publish macOS Artifact
       uses: actions/upload-artifact@v2
       with:
