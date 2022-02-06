@@ -12,7 +12,7 @@ jobs:
   #   name: line macOS release
   #   # runs-on: macos-11
   #   runs-on: macos-latest
-  basic:
+  build:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -44,7 +44,7 @@ jobs:
       with:
         name: line macOS release
         path: release
-        
+
     if: matrix.os == 'ubuntu-latest'
     - name: Publish linux Artifact
       uses: actions/upload-artifact@v2
