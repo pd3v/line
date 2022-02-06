@@ -9,7 +9,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
@@ -35,19 +34,19 @@ jobs:
         mkdir release
         cp build/line release/line
 
-    if: matrix.os == 'macos-latest' 
+    # if: matrix.os == 'macos-latest' 
     - name: Publish macOS Artifact
       uses: actions/upload-artifact@v2
       with:
         name: line macOS release
         path: release
 
-    if: matrix.os == 'ubuntu-latest'
-    - name: Publish linux Artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: line linux release
-        path: release
+    # if: matrix.os == 'ubuntu-latest'
+    # - name: Publish linux Artifact
+    #   uses: actions/upload-artifact@v2
+    #   with:
+    #     name: line linux release
+    #     path: release
 
   # release_linux:
   #   name: line linux release
