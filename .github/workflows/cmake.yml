@@ -8,11 +8,8 @@ on:
     types: [closed]
 
 jobs:
-  # release_macos:
-  #   name: line macOS release
-  #   # runs-on: macos-11
-  #   runs-on: macos-latest
   build:
+
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
