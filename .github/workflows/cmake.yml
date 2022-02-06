@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest]
         # os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
@@ -24,14 +24,12 @@ jobs:
     - name: Create Build Directory
       run: cmake -E make_directory ${{github.workspace}}/build
 
-    - if: matrix.os == 'macos-latest'
     - name: Configure CMake
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
-    - if: matrix.os == 'ubuntu-latest'
-    - name: Configure CMake
-      # if: matrix.os == 'ubuntu-latest'
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=ON -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
+    # - name: Configure CMake
+    #   # if: matrix.os == 'ubuntu-latest'
+    #   run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=ON -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
     - name: Build
       run: cmake --build ./build --config Release
@@ -46,13 +44,6 @@ jobs:
       with:
         name: line macOS release
         path: release
-
-    # if: matrix.os == 'ubuntu-latest'
-    # - name: Publish linux Artifact
-    #   uses: actions/upload-artifact@v2
-    #   with:
-    #     name: line linux release
-    #     path: release
 
   # release_linux:
   #   name: line linux release
