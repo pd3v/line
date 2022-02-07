@@ -8,8 +8,8 @@ on:
     types: [closed]
 
 jobs:
-  release_ubuntu:
-    name: line Ubuntu release
+  build:
+    # name: line Ubuntu release
     runs-on: ubuntu-latest
 
     steps:
