@@ -37,10 +37,9 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: line macOS release
-          path: release
-          
-    release_linux:
-      name: line Linux release
+          path: release          
+    release_ubuntu:
+      name: line Ubuntu release
       runs-on: ubuntu-latest
 
       steps:
@@ -66,8 +65,8 @@ jobs:
           mkdir release
           cp build/line release/line
       
-      - name: Publish Linux Artifact
+      - name: Publish Ubuntu Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: line Linux release
+          name: line Ubuntu release
           path: release
