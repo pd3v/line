@@ -22,7 +22,7 @@ const float DEFAULT_BPM = 60.0;
 const string PROMPT = "line$ ";
 const string VERSION = "0.1";
 
-const int bpm(const int bpm, const unsigned int barDur) {
+const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
   return DEFAULT_BPM/bpm*barDur;
 }
 
@@ -43,11 +43,11 @@ int main() {
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
 
-  const unsigned int refBarDur = 4000; // milliseconds
+  const uint16_t refBarDur = 4000; // milliseconds
   long barDur = bpm(DEFAULT_BPM,refBarDur);
   
-  vector<unsigned char> noteMessage;
-  vector<vector<int>> pattern{};
+  vector<uint16_t> noteMessage;
+  vector<vector<uint16_t>> pattern{};
   uint8_t ch = 0;
   
   string opt;
@@ -68,7 +68,7 @@ int main() {
   
   auto fut = async(launch::async, [&](){
     unsigned long partial = 0;
-    vector<vector<int>> _patt{};
+    vector<vector<uint16_t>> _patt{};
     uint8_t _ch = 0;
 
     // waiting for live coder's first pattern 
@@ -138,10 +138,10 @@ int main() {
         sregex_iterator end;
         
         if (pos == end) {
-          vector<vector<int>> tempPattern{};
+          vector<vector<uint16_t>> tempPattern{};
           istringstream iss(opt);
           bool subBarFlag = 0;
-          vector<int> subPatt{};
+          vector<uint16_t> subPatt{};
           
           vector<string> results((istream_iterator<string>(iss)), istream_iterator<string>());
           
