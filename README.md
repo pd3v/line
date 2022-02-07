@@ -7,6 +7,10 @@
 
 ![line_screenshot](https://github.com/pd3v/line/blob/develop/line0.1.png)
 
+### Get *line* build
+
+[macos build](https://github.com/pd3v/line/actions/runs/1802392423)
+
 ### To build and run *line*
 
 + Go to `line`'s directory
@@ -21,7 +25,7 @@
 
 ## Manual
 
-With `live` running, type:
+With `line` running, type:
 
 
 **To send a MIDI message:**

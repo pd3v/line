@@ -8,21 +8,22 @@ set(LIBRARY_OUTPUT_NAME ${PROJECT_NAME})
 
 add_executable("${PROJECT_NAME}" line.cpp)
 
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi)
 add_subdirectory(externals/rtmidi)
 
 target_include_directories(
   ${PROJECT_NAME} 
-  PRIVATE externals/rtmidi/
+  # PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
+  PRIVATE /externals/rtmidi/
 )
 
 target_link_directories(
   ${PROJECT_NAME}
-  PRIVATE externals/rtmidi/
+  # PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
+  PRIVATE /externals/rtmidi/
 )
 
 target_link_libraries(
   ${PROJECT_NAME}
   LINK_PRIVATE rtmidi
 )
-
-install(TARGETS line)
