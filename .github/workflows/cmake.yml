@@ -8,65 +8,64 @@ on:
     types: [closed]
 
 jobs:
-  jobs:
-    # release_macos:
-    #   name: macOS line release
-    #   runs-on: macos-latest
+  release_macos:
+    name: macOS line release
+    runs-on: macos-latest
 
-    #   steps:
-    #   - uses: actions/checkout@v2
+    steps:
+    - uses: actions/checkout@v2
 
-    #   - name: Checkout submodules
-    #     run: git submodule update --init --recursive
-
-    #   - name: Create Build Directory
-    #     run: cmake -E make_directory ${{github.workspace}}/build
-
-    #   - name: MacOS Configure CMake
-    #     run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
-
-    #   - name: Build
-    #     run: cmake --build ./build --config Release
-
-    #   - name: Create Artifact
-    #     run: |
-    #       mkdir release
-    #       cp build/line release/line
-
-    #   - name: Publish macOS Artifact
-    #     uses: actions/upload-artifact@v2
-    #     with:
-    #       name: line macOS release
-    #       path: release          
-    release_ubuntu:
-      name: line Ubuntu release
-      runs-on: ubuntu-latest
-
-      steps:
-      - uses: actions/checkout@v2
-
-      - name: Checkout submodules
+    - name: Checkout submodules
       run: git submodule update --init --recursive
 
-      - name: Install dependencies
-        run: sudo apt-get install jack
+    - name: Create Build Directory
+      run: cmake -E make_directory ${{github.workspace}}/build
 
-      - name: Create Build Directory
-        run: cmake -E make_directory ${{github.workspace}}/build
+    - name: MacOS Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
-      - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=ON -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
+    - name: Build
+      run: cmake --build ./build --config Release
 
-      - name: Build
-        run: cmake --build ./build --config Release
+    - name: Create Artifact
+      run: |
+        mkdir release
+        cp build/line release/line
 
-      - name: Create Artifact
-        run: |
-          mkdir release
-          cp build/line release/line
-      
-      - name: Publish Ubuntu Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: line Ubuntu release
-          path: release
+    - name: Publish macOS Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: line macOS release
+        path: release          
+  release_ubuntu:
+    name: line Ubuntu release
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Checkout submodules
+    run: git submodule update --init --recursive
+
+    - name: Install dependencies
+      run: sudo apt-get install jack
+
+    - name: Create Build Directory
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=ON -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
+
+    - name: Build
+      run: cmake --build ./build --config Release
+
+    - name: Create Artifact
+      run: |
+        mkdir release
+        cp build/line release/line
+    
+    - name: Publish Linux Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: line Linux release
+        path: release
