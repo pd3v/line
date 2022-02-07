@@ -30,7 +30,6 @@ jobs:
       with:
         name: line macOS release
         path: release
-
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
