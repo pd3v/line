@@ -7,6 +7,10 @@
 
 ![line_screenshot](https://github.com/pd3v/line/blob/develop/line0.1.png)
 
+### Get *line* build
+
+![macos build](https://github.com/pd3v/line/suites/5195009971/artifacts/158360496)
+
 ### To build and run *line*
 
 + Go to `line`'s directory
