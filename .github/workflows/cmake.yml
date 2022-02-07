@@ -52,11 +52,11 @@ jobs:
         path: release
 
     - name: Publish Linux Artifact
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v2
-        with:
-          name: line Linux release
-          path: release      
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v2
+      with:
+        name: line Linux release
+        path: release      
 
   # release_linux:
   #   name: line linux release
