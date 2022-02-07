@@ -13,12 +13,12 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Install dependencies
+      - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install jackd
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Create Build Directory
       run: cmake -E make_directory ${{github.workspace}}/build
     - name: Configure CMake
