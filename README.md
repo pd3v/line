@@ -9,7 +9,7 @@
 
 ### Get *line* build
 
-![macos build](https://github.com/pd3v/line/suites/5195009971/artifacts/158360496)
+[macos build](https://github.com/pd3v/line/actions/runs/1802392423)
 
 ### To build and run *line*
 
