@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-latest, ubuntu-latest]
         # os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
@@ -21,15 +21,20 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
 
+    - name: Install dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install jack
+
     - name: Create Build Directory
       run: cmake -E make_directory ${{github.workspace}}/build
 
-    - name: Configure CMake
+    - name: MacOS Configure CMake
+      if: matrix.os == 'macos-latest'
       run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
-    # - name: Configure CMake
-    #   # if: matrix.os == 'ubuntu-latest'
-    #   run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=ON -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
+    - name: Linux Configure CMake
+      if: matrix.os == 'ubuntu-latest'
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=ON -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
 
     - name: Build
       run: cmake --build ./build --config Release
@@ -40,10 +45,18 @@ jobs:
         cp build/line release/line
 
     - name: Publish macOS Artifact
+      if: matrix.os == 'macos-latest'
       uses: actions/upload-artifact@v2
       with:
         name: line macOS release
         path: release
+
+    - name: Publish Linux Artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: line Linux release
+          path: release      
 
   # release_linux:
   #   name: line linux release
