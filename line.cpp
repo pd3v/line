@@ -71,11 +71,6 @@ vector<vector<uint16_t>> scramble(vector<vector<uint16_t>> _pattern) {
   for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {std::random_shuffle(_subPattern.begin(),_subPattern.end());});
   std::random_shuffle(_pattern.begin(),_pattern.end());
 
-  // for(auto& _s : _pattern)
-  //   std::random_shuffle(_s.begin(),_s.end());
-
-  // std::random_shuffle(_pattern.begin(),_pattern.end());
-
   return _pattern;
 }
 
@@ -171,8 +166,6 @@ int main() {
   while (!exit) {
     std::cout << PROMPT;
     getline(cin, opt);
-    
-    // std::cout << std::stof(opt.substr(3,opt.size()-1)) << " " << opt.substr(0,3) << std::endl;
     
     if (!opt.empty()) {
       if (opt.at(0) == 'm' && opt.size() == 1) {
