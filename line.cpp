@@ -27,27 +27,79 @@ const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
 }
 
 void displayOptionsMenu() {
-  cout << "---------------------" << endl;
+  cout << "----------------------" << endl;
   cout << "  line " << VERSION << " midi seq  " << endl;
-  cout << "---------------------" << endl;
-  cout << "..<[n] >   pattern   " << endl;
-  cout << "..b<[n]>   bpm       " << endl;
-  cout << "..c<[n]>   midi ch   " << endl;
-  cout << "..m        this menu " << endl;
-  cout << "..e        exit      " << endl;
-  cout << "---------------------" << endl;
+  cout << "----------------------" << endl;
+  cout << "..<[n] >    pattern   " << endl;
+  cout << "..b<[n]>    bpm       " << endl;
+  cout << "..c<[n]>    midi ch   " << endl;
+  cout << "..m         this menu " << endl;
+  cout << "..e         exit      " << endl;
+  cout << "..a<[n]>    amplitude " << endl;
+  cout << "..mu        mute      " << endl;
+  cout << "..u         unmute    " << endl;
+  cout << "..r         reverse   " << endl;
+  cout << "..s         scramble  " << endl;
+  cout << "..x         xscramble " << endl;
+  cout << "----------------------" << endl;
   if (rand()%20+1 == 1) cout << "          author:pd3v" << endl;
 }
 
+float amplitude = 127;
 bool muted = false;
 
+void amp(float _amplitude) {
+  amplitude = 127*_amplitude;
+}
+
 void mute() {
-  std::cout << __FUNCTION__ << std::endl;
   muted = true;
 }
 
 void unmute() {
   muted = false;
+}
+
+vector<vector<uint16_t>> reverse(vector<vector<uint16_t>> _pattern) {
+  for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {std::reverse(_subPattern.begin(),_subPattern.end());});
+  std::reverse(_pattern.begin(),_pattern.end());
+
+  return _pattern;
+}
+
+vector<vector<uint16_t>> scramble(vector<vector<uint16_t>> _pattern) {
+  for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {std::random_shuffle(_subPattern.begin(),_subPattern.end());});
+  std::random_shuffle(_pattern.begin(),_pattern.end());
+
+  // for(auto& _s : _pattern)
+  //   std::random_shuffle(_s.begin(),_s.end());
+
+  // std::random_shuffle(_pattern.begin(),_pattern.end());
+
+  return _pattern;
+}
+
+vector<vector<uint16_t>> xscramble(vector<vector<uint16_t>> _pattern) {
+  vector<uint16_t> pattValues {};
+
+  for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {
+    for_each(_subPattern.begin(),_subPattern.end(),[&](auto& _v) {
+      pattValues.emplace_back(_v);
+    });
+  });
+
+  std::random_shuffle(pattValues.begin(),pattValues.end());
+  
+  for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {
+    for_each(_subPattern.begin(),_subPattern.end(),[&](auto& _v) {
+      _v = pattValues.back();
+      pattValues.pop_back();
+    });
+  });
+  
+  std::random_shuffle(_pattern.begin(),_pattern.end());
+
+  return _pattern;
 }
 
 int main() {
@@ -57,7 +109,7 @@ int main() {
   const uint16_t refBarDur = 4000; // milliseconds
   long barDur = bpm(DEFAULT_BPM,refBarDur);
   
-  vector<uint16_t> noteMessage;
+  vector<uint8_t> noteMessage;
   vector<vector<uint16_t>> pattern{};
   uint8_t ch = 0;
   
@@ -98,7 +150,7 @@ int main() {
           for (auto& n : subPattern) {
             noteMessage[0] = 144+_ch;
             noteMessage[1] = n;
-            noteMessage[2] = ((n == 0) || muted) ? 0 : 127;
+            noteMessage[2] = ((n == 0) || muted) ? 0 : amplitude;
             midiOut.sendMessage(&noteMessage);
             
             std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
@@ -120,31 +172,46 @@ int main() {
     std::cout << PROMPT;
     getline(cin, opt);
     
+    // std::cout << std::stof(opt.substr(3,opt.size()-1)) << " " << opt.substr(0,3) << std::endl;
+    
     if (!opt.empty()) {
-      if (opt.at(0) == 'm') {
+      if (opt.at(0) == 'm' && opt.size() == 1) {
         displayOptionsMenu();
       } else if (opt.at(0) == 'c') {
-        try {
-          ch = std::stoi(opt.substr(1,opt.size()-1))-1;
-        }
-        catch (...) {
-          cerr << "Invalid channel value." << endl; 
-        }
+          try {
+            ch = std::stoi(opt.substr(1,opt.size()-1))-1;
+          }
+          catch (...) {
+            cerr << "Invalid channel value." << endl; 
+          }
       } else if (opt.at(0) == 'b') {
-        try {
-          barDur = bpm(std::stoi(opt.substr(1,opt.size()-1)),refBarDur);
-        } catch (...) {
-          cerr << "Invalid bpm value." << endl;
-        }
+          try {
+            barDur = bpm(std::stoi(opt.substr(1,opt.size()-1)),refBarDur);
+          } catch (...) {
+            cerr << "Invalid bpm value." << endl;
+          }
       } else if (opt == "e") {
           pattern.clear();
           soundingThread = true;
           cv.notify_one();
           std::cout << fut.get();
           exit = true;
-      } else if (opt == "mute") {
-          std::cout << __FUNCTION__ << std::endl;
+      } else if (opt.at(0) == 'a') {
+          try {
+            amp(std::stof(opt.substr(1,opt.size()-1)));
+          } catch (...) {
+            cerr << "Invalid amplitude." << endl; 
+          }
+      } else if (opt == "mu") {
           mute();
+      } else if (opt == "u") {
+          unmute();
+      } else if (opt == "r") {    
+          pattern = reverse(pattern);
+      } else if (opt == "s") {    
+          pattern = scramble(pattern);
+      } else if (opt == "x") {    
+          pattern = xscramble(pattern);
       } else {
         // parser
         regex_search(opt, matchExp, regExp);
@@ -165,11 +232,11 @@ int main() {
               try {
                 if (i.substr(0,1) == ".") {
                   s = i.substr(1,i.back());
-                  subPatt.push_back(stoi(s));
+                  subPatt.push_back(static_cast<uint16_t>(stoi(s)));
                   subBarFlag = true;
                 } else if (i.substr(i.length()-1,i.length()) == ".") {
                   s = i.substr(0,i.length()-1);
-                  subPatt.push_back(stoi(s));
+                  subPatt.push_back(static_cast<uint16_t>(stoi(s)));
                   tempPattern.push_back(subPatt);
                   subPatt.clear();
                   subBarFlag = false;
@@ -177,7 +244,7 @@ int main() {
                   if (subBarFlag == true)
                     subPatt.push_back(stoi(i));
                   else if (subBarFlag == false)
-                    tempPattern.push_back({stoi(i)});
+                    tempPattern.push_back({static_cast<uint16_t>(stoi(i))});
                 }
               } catch(...) { 
                 syntaxError = true;
