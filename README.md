@@ -7,9 +7,9 @@
 
 ![line_screenshot](https://github.com/pd3v/line/blob/develop/line0.1.png)
 
-### Get *line* build
+### Get *line* binaries
 
-[macos build](https://github.com/pd3v/line/actions/runs/1802392423)
+[macos binaries](https://github.com/pd3v/line/actions/runs/1802392423)
 
 ### To build and run *line*
 
@@ -53,6 +53,32 @@ channel 2
 120 bpm
 
 `b120`
+
+**To set overall playing pattern amplitude:**
+
+amplitude 0.5
+
+`a0.5`
+
+**To mute and umute:**
+
+`m` and `um`
+
+**To reverse:**  
+
+`r`
+
+**To scramble:**  
+
+// scrambles notes within each rhythmic part and rhytmic struct
+
+`s`
+
+**To extra scramble :**  
+
+// scrambles notes across the pattern and rhythmic struct
+
+`x`
 
 **To exit:**
 
