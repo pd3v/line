@@ -54,7 +54,7 @@ channel 2
 
 `b120`
 
-**To set overall playing pattern amplitude:**
+**To set amplitude:**
 
 amplitude 0.5
 
@@ -70,7 +70,7 @@ amplitude 0.5
 
 **To scramble:**  
 
-// scrambles notes within each rhythmic part and rhytmic struct
+// scrambles notes within each rhythmic part and rhythmic struct
 
 `s`
 
