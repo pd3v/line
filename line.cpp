@@ -10,6 +10,7 @@
 #include <future>
 #include <mutex>
 #include <vector>
+#include <deque>
 #include <regex>
 #include <stdexcept>
 #include <sstream>
@@ -41,6 +42,7 @@ void displayOptionsMenu() {
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
+  cout << "..l<[n]>    last patt " << endl;
   cout << "----------------------" << endl;
   if (rand()%20+1 == 1) cout << "          author:pd3v" << endl;
 }
@@ -107,7 +109,7 @@ int main() {
   vector<uint8_t> noteMessage;
   vector<vector<uint16_t>> pattern{};
   uint8_t ch = 0;
-  
+  deque<vector<vector<uint16_t>>> last3Patterns{};
   string opt;
   
   mutex mtxWait, mtxPattern;
@@ -172,14 +174,14 @@ int main() {
         displayOptionsMenu();
       } else if (opt.at(0) == 'c') {
           try {
-            ch = std::stoi(opt.substr(1,opt.size()-1))-1;
+            ch = std::abs(std::stoi(opt.substr(1,opt.size()-1))-1);
           }
           catch (...) {
             cerr << "Invalid channel value." << endl; 
           }
       } else if (opt.at(0) == 'b') {
           try {
-            barDur = bpm(std::stoi(opt.substr(1,opt.size()-1)),refBarDur);
+            barDur = bpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))),refBarDur);
           } catch (...) {
             cerr << "Invalid bpm value." << endl;
           }
@@ -205,6 +207,12 @@ int main() {
           pattern = scramble(pattern);
       } else if (opt == "x") {    
           pattern = xscramble(pattern);
+      } else if (opt == "l" || opt == "l1") {    
+          pattern = last3Patterns.front();
+      } else if (opt == "l2") {    
+          pattern = last3Patterns.at(1);
+      } else if (opt == "l3") {    
+          pattern = last3Patterns.at(2);
       } else {
         // parser
         regex_search(opt, matchExp, regExp);
@@ -255,6 +263,9 @@ int main() {
             
             soundingThread = true;
             cv.notify_one();
+
+            last3Patterns.push_front(pattern);
+            if (last3Patterns.size() > 3) last3Patterns.pop_back();
           }
         }
       }
