@@ -80,6 +80,14 @@ amplitude 0.5
 
 `x`
 
+**To load 3 last patterns :**  
+
+`l` or `l1`
+
+`l2`
+
+`l3`
+
 **To exit:**
 
 `e`  

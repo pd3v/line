@@ -28,9 +28,9 @@ const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
 }
 
 void displayOptionsMenu() {
-  cout << "----------------------" << endl;
-  cout << "  line " << VERSION << " midi seq  " << endl;
-  cout << "----------------------" << endl;
+  cout << "--------------------------" << endl;
+  cout << "  line " << VERSION << " midi step seq  " << endl;
+  cout << "--------------------------" << endl;
   cout << "..<[n] >    pattern   " << endl;
   cout << "..b<[n]>    bpm       " << endl;
   cout << "..c<[n]>    midi ch   " << endl;
@@ -42,9 +42,9 @@ void displayOptionsMenu() {
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
-  cout << "..l<[n]>    last patt " << endl;
-  cout << "----------------------" << endl;
-  if (rand()%20+1 == 1) cout << "          author:pd3v" << endl;
+  cout << "..l<[n]>    3 last patts" << endl;
+  cout << "--------------------------" << endl;
+  if (rand()%5+1 == 1) cout << "             author:pd3v" << endl;
 }
 
 float amplitude = 127;
