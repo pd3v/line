@@ -38,9 +38,9 @@ With `line` running, type:
 
 `45 .34 35. 48 49` 
 
-// 0 for a silent note
+// - for a silent note
 
-`36 .37 38. 41 .0 46.` 
+`36 .37 38. 41 .- 46.` 
 
 **To set a MIDI channel:**  
 

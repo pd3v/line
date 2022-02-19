@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <stdlib.h>
+#include <algorithm> 
 #include "externals/rtmidi/RtMidi.h"
 
 using namespace std;
@@ -22,15 +23,31 @@ using namespace std;
 const float DEFAULT_BPM = 60.0;
 const string PROMPT = "line$ ";
 const string VERSION = "0.1";
+const char REST_SYMBOL = '-';
+const uint8_t REST_VAL = 128;
+
+void replaceRests(string& s) {
+  auto rests = true;
+  std::size_t p;
+
+  while(rests) {
+    p = s.find(REST_SYMBOL);
+    if (p != std::string::npos) {
+      s.erase(p,1);
+      s.insert(p,to_string(REST_VAL));
+    } else 
+        rests = false;
+  }
+}
 
 const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
   return DEFAULT_BPM/bpm*barDur;
 }
 
 void displayOptionsMenu() {
-  cout << "--------------------------" << endl;
-  cout << "  line " << VERSION << " midi step seq  " << endl;
-  cout << "--------------------------" << endl;
+  cout << "----------------------" << endl;
+  cout << "  line " << VERSION << " midi seq  " << endl;
+  cout << "----------------------" << endl;
   cout << "..<[n] >    pattern   " << endl;
   cout << "..b<[n]>    bpm       " << endl;
   cout << "..c<[n]>    midi ch   " << endl;
@@ -42,9 +59,9 @@ void displayOptionsMenu() {
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
-  cout << "..l<[n]>    3 last patts" << endl;
-  cout << "--------------------------" << endl;
-  if (rand()%5+1 == 1) cout << "             author:pd3v" << endl;
+  cout << "..l<[n]>    last patt " << endl;
+  cout << "----------------------" << endl;
+  if (rand()%20+1 == 1) cout << "          author:pd3v" << endl;
 }
 
 float amplitude = 127;
@@ -147,7 +164,7 @@ int main() {
           for (auto& n : subPattern) {
             noteMessage[0] = 144+_ch;
             noteMessage[1] = n;
-            noteMessage[2] = ((n == 0) || muted) ? 0 : amplitude;
+            noteMessage[2] = ((n == REST_VAL) || muted) ? 0 : amplitude;
             midiOut.sendMessage(&noteMessage);
             
             std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
@@ -221,12 +238,13 @@ int main() {
         
         if (pos == end) {
           vector<vector<uint16_t>> tempPattern{};
+          replaceRests(opt);
           istringstream iss(opt);
-          bool subBarFlag = 0;
+          bool subBarFlag = false;
           vector<uint16_t> subPatt{};
-          
+  
           vector<string> results((istream_iterator<string>(iss)), istream_iterator<string>());
-          
+        
           for_each(results.begin(),results.end(),[&](string i) {
               string s;
 
