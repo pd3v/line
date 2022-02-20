@@ -3,7 +3,7 @@
 
 + Sends MIDI messages to a chosen MIDI channel. Default is 1.
 
-+ 1 instrument
++ 1 instrument or 1 CC
 
 ![line_screenshot](https://github.com/pd3v/line/blob/develop/line0.1.png)
 
@@ -46,7 +46,7 @@ With `line` running, type:
 
 channel 2
 
-`c2`
+`ch2`
 
 **To set bpm:**  
 
@@ -87,6 +87,16 @@ amplitude 0.5
 `l2`
 
 `l3`
+
+**To swith between notes and cc modes:**  
+
+// notes mode
+
+`n` 
+
+// cc mode, e.g. cc11
+
+`cc11`
 
 **To exit:**
 

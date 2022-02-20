@@ -50,7 +50,9 @@ void displayOptionsMenu() {
   cout << "----------------------" << endl;
   cout << "..<[n] >    pattern   " << endl;
   cout << "..b<[n]>    bpm       " << endl;
-  cout << "..c<[n]>    midi ch   " << endl;
+  cout << "..ch<[n]>   midi ch   " << endl;
+  cout << "..cc<[n]>   cc ch mode" << endl;
+  cout << "..n         notes mode" << endl;
   cout << "..m         this menu " << endl;
   cout << "..e         exit      " << endl;
   cout << "..a<[n]>    amplitude " << endl;
@@ -61,7 +63,7 @@ void displayOptionsMenu() {
   cout << "..x         xscramble " << endl;
   cout << "..l<[n]>    last patt " << endl;
   cout << "----------------------" << endl;
-  if (rand()%20+1 == 1) cout << "          author:pd3v" << endl;
+  if (rand()%10+1 == 1) cout << "          author:pd3v" << endl;
 }
 
 float amplitude = 127;
@@ -126,6 +128,8 @@ int main() {
   vector<uint8_t> noteMessage;
   vector<vector<uint16_t>> pattern{};
   uint8_t ch = 0;
+  uint8_t ccCh = 0;
+  bool rNotes = true;
   deque<vector<vector<uint16_t>>> last3Patterns{};
   string opt;
   
@@ -147,7 +151,9 @@ int main() {
     unsigned long partial = 0;
     vector<vector<uint16_t>> _patt{};
     uint8_t _ch = 0;
-
+    uint8_t _ccCh = 0;
+    bool _rNotes = true;
+    
     // waiting for live coder's first pattern 
     unique_lock<mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
@@ -156,25 +162,38 @@ int main() {
     while (soundingThread) {
       if (!pattern.empty()) {
         partial = barDur/pattern.size();
-      
         _patt = pattern;
         _ch = ch;
+        _ccCh = ccCh;
+        _rNotes = rNotes;
 
-        for (auto& subPattern : _patt) {
-          for (auto& n : subPattern) {
-            noteMessage[0] = 144+_ch;
-            noteMessage[1] = n;
-            noteMessage[2] = ((n == REST_VAL) || muted) ? 0 : amplitude;
-            midiOut.sendMessage(&noteMessage);
-            
-            std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
+        if (_rNotes)
+          for (auto& subPattern : _patt) {
+            for (auto& n : subPattern) {
+              noteMessage[0] = 144+_ch;
+              noteMessage[1] = n;
+              noteMessage[2] = ((n == REST_VAL) || muted) ? 0 : amplitude;
+              midiOut.sendMessage(&noteMessage);
+              
+              std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
 
-            noteMessage[0] = 128+_ch;
-            noteMessage[1] = n;
-            noteMessage[2] = 0;
-            midiOut.sendMessage(&noteMessage);
+              noteMessage[0] = 128+_ch;
+              noteMessage[1] = n;
+              noteMessage[2] = 0;
+              midiOut.sendMessage(&noteMessage);
+            }
           }
-        }
+        else
+          for (auto& subPattern : _patt) {
+            for (auto& n : subPattern) {
+              noteMessage[0] = 176+_ch;
+              noteMessage[1] = _ccCh;
+              noteMessage[2] = n;
+              midiOut.sendMessage(&noteMessage);
+              
+              std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
+            }
+          }
       } else break;
     }
     return "line is off.\n";
@@ -189,12 +208,24 @@ int main() {
     if (!opt.empty()) {
       if (opt.at(0) == 'm' && opt.size() == 1) {
         displayOptionsMenu();
-      } else if (opt.at(0) == 'c') {
+      } else if (opt.substr(0,2) == "ch") {
           try {
-            ch = std::abs(std::stoi(opt.substr(1,opt.size()-1))-1);
+            ch = std::abs(std::stoi(opt.substr(2,opt.size()-1))-1);
           }
           catch (...) {
             cerr << "Invalid channel value." << endl; 
+          }
+      } else if (opt == "n") {
+          rNotes = true;
+          pattern.clear();
+          pattern.push_back({REST_VAL});
+      } else if (opt.substr(0,2) == "cc") {
+          try {
+            ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+            rNotes = false;
+          }
+          catch (...) {
+            cerr << "Invalid cc channel value." << endl; 
           }
       } else if (opt.at(0) == 'b') {
           try {
@@ -274,8 +305,8 @@ int main() {
           if (syntaxError) {
             tempPattern.clear();
             syntaxError = false;
-          }
-
+          } 
+          
           if (!tempPattern.empty()) {
             pattern = tempPattern;
             
