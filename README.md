@@ -11,7 +11,9 @@
 
 [macos binaries](https://github.com/pd3v/line/actions/runs/1802392423)
 
-### To build and run *line*
+### To build and run *line* 
+
+(CMake is necessary)
 
 + Go to `line`'s directory
 
@@ -38,7 +40,7 @@ With `line` running, type:
 
 `45 .34 35. 48 49` 
 
-// - for a silent note
+// '-' for a silent note
 
 `36 .37 38. 41 .- 46.` 
 

@@ -25,6 +25,7 @@ const string PROMPT = "line$ ";
 const string VERSION = "0.1";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
+const uint8_t OFF_SYNC_DUR = 100; // milliseconds
 
 void replaceRests(string& s) {
   auto rests = true;
@@ -44,25 +45,32 @@ const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
   return DEFAULT_BPM/bpm*barDur;
 }
 
-void displayOptionsMenu() {
+void displayOptionsMenu(string menuVers="") {
   cout << "----------------------" << endl;
   cout << "  line " << VERSION << " midi seq  " << endl;
   cout << "----------------------" << endl;
   cout << "..<[n] >    pattern   " << endl;
   cout << "..b<[n]>    bpm       " << endl;
   cout << "..ch<[n]>   midi ch   " << endl;
-  cout << "..cc<[n]>   cc ch mode" << endl;
-  cout << "..n         notes mode" << endl;
   cout << "..m         this menu " << endl;
+  cout << "..d         extnd menu" << endl;
   cout << "..e         exit      " << endl;
   cout << "..a<[n]>    amplitude " << endl;
-  cout << "..mu        mute      " << endl;
-  cout << "..u         unmute    " << endl;
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
   cout << "..l<[n]>    last patt " << endl;
+  
+  if (menuVers == "d") {
+    cout << "..cc<[n]>   cc ch mode" << endl;
+    cout << "..n         notes mode" << endl;
+    cout << "..t         mute      " << endl;
+    cout << "..u         unmute    " << endl;
+    cout << "..i         sync cc   " << endl;
+    cout << "..o         async cc  " << endl;
+  }
   cout << "----------------------" << endl;
+  
   if (rand()%10+1 == 1) cout << "          author:pd3v" << endl;
 }
 
@@ -130,6 +138,7 @@ int main() {
   uint8_t ch = 0;
   uint8_t ccCh = 0;
   bool rNotes = true;
+  bool sync = false;
   deque<vector<vector<uint16_t>>> last3Patterns{};
   string opt;
   
@@ -153,6 +162,7 @@ int main() {
     uint8_t _ch = 0;
     uint8_t _ccCh = 0;
     bool _rNotes = true;
+    // bool sync = false;
     
     // waiting for live coder's first pattern 
     unique_lock<mutex> lckWait(mtxWait);
@@ -166,6 +176,7 @@ int main() {
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
+        // _sync = sync;
 
         if (_rNotes)
           for (auto& subPattern : _patt) {
@@ -191,7 +202,7 @@ int main() {
               noteMessage[2] = n;
               midiOut.sendMessage(&noteMessage);
               
-              std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
+              std::this_thread::sleep_for(chrono::milliseconds(sync ? partial/subPattern.size() : OFF_SYNC_DUR));
             }
           }
       } else break;
@@ -199,15 +210,17 @@ int main() {
     return "line is off.\n";
   });
   
-  displayOptionsMenu();
+  displayOptionsMenu("");
   
   while (!exit) {
     std::cout << PROMPT;
     getline(cin, opt);
     
     if (!opt.empty()) {
-      if (opt.at(0) == 'm' && opt.size() == 1) {
-        displayOptionsMenu();
+      if (opt == "m") {
+        displayOptionsMenu("");
+      } else if (opt == "d") {
+        displayOptionsMenu(opt);
       } else if (opt.substr(0,2) == "ch") {
           try {
             ch = std::abs(std::stoi(opt.substr(2,opt.size()-1))-1);
@@ -245,7 +258,7 @@ int main() {
           } catch (...) {
             cerr << "Invalid amplitude." << endl; 
           }
-      } else if (opt == "mu") {
+      } else if (opt == "t") {
           mute();
       } else if (opt == "u") {
           unmute();
@@ -261,6 +274,10 @@ int main() {
           pattern = last3Patterns.at(1);
       } else if (opt == "l3") {    
           pattern = last3Patterns.at(2);
+      } else if (opt == "i") {    
+          sync= true;
+      } else if (opt == "o") {    
+          sync= false;
       } else {
         // parser
         regex_search(opt, matchExp, regExp);
