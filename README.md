@@ -76,7 +76,7 @@ amplitude 0.5
 
 `s`
 
-**To extra scramble :**  
+**To extra scramble:**  
 
 // scrambles notes across the pattern and rhythmic struct
 
@@ -100,11 +100,19 @@ amplitude 0.5
 
 `cc11`
 
+**To set cc sync lock/unlock:**  
+
+// lock or unlock
+
+`i` or `o`
+
 **To exit:**
 
 `e`  
 
-**To display commands menu:**
+**To display commands menu/extended menu:**
 
-`m`
+`m` or `d`
+
+
  
