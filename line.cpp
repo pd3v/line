@@ -16,7 +16,12 @@
 #include <sstream>
 #include <stdlib.h>
 #include <algorithm> 
+#include <thread>
+#include "AudioPlatform_rtaudio.hpp"
 #include "externals/rtmidi/RtMidi.h"
+#if defined(LINK_PLATFORM_UNIX)
+#include <termios.h>
+#endif
 
 using namespace std;
 
@@ -26,6 +31,41 @@ const string VERSION = "0.1";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
+
+// namespace {
+  struct State {
+    std::atomic<bool> running;
+    ableton::Link link;
+    ableton::linkaudio::AudioPlatform audioPlatform;
+    
+    State()
+      : running(true)
+      , link(119)
+      , audioPlatform(link)
+    {
+    }
+  };
+// }
+
+void disableBufferedInput()
+{
+#if defined(LINK_PLATFORM_UNIX)
+  termios t;
+  tcgetattr(STDIN_FILENO, &t);
+  t.c_lflag &= static_cast<unsigned long>(~ICANON);
+  tcsetattr(STDIN_FILENO, TCSANOW, &t);
+#endif
+}
+
+void enableBufferedInput()
+{
+#if defined(LINK_PLATFORM_UNIX)
+  termios t;
+  tcgetattr(STDIN_FILENO, &t);
+  t.c_lflag |= ICANON;
+  tcsetattr(STDIN_FILENO, TCSANOW, &t);
+#endif
+}
 
 void replaceRests(string& s) {
   auto rests = true;
@@ -151,6 +191,11 @@ int main() {
   bool soundingThread = false;
   bool exit = false;
   bool syntaxError = false;
+
+  State state;
+  const auto tempo = state.link.captureAppSessionState().tempo();
+  auto& engine = state.audioPlatform.mEngine;
+  state.link.enable(!state.link.isEnabled());
     
   noteMessage.push_back(0);
   noteMessage.push_back(0);
@@ -163,11 +208,25 @@ int main() {
     uint8_t _ccCh = 0;
     bool _rNotes = true;
     // bool sync = false;
+    const std::chrono::microseconds time = state.link.clock().micros();
+    const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
+    const bool linkEnabled = state.link.isEnabled();
+    const std::size_t numPeers = state.link.numPeers();
+    const double quantum = state.audioPlatform.mEngine.quantum();
+    const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
+
+    const auto enabled = linkEnabled ? "yes" : "no";
+    const auto beats = sessionState.beatAtTime(time, quantum);
+    const auto phase = sessionState.phaseAtTime(time, quantum);
+    const auto startStop = startStopSyncOn ? "yes" : "no";
+    const auto isPlaying = sessionState.isPlaying() ? "[playing]" : "[stopped]";
     
     // waiting for live coder's first pattern 
     unique_lock<mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
     lock_guard<mutex> lckPattern(mtxPattern);
+
+    //state.link.enable(!state.link.isEnabled());
     
     while (soundingThread) {
       if (!pattern.empty()) {
@@ -177,7 +236,7 @@ int main() {
         _ccCh = ccCh;
         _rNotes = rNotes;
         // _sync = sync;
-
+        if (phase >= 0.0 && phase < 0.5)  {
         if (_rNotes)
           for (auto& subPattern : _patt) {
             for (auto& n : subPattern) {
@@ -205,6 +264,7 @@ int main() {
               std::this_thread::sleep_for(chrono::milliseconds(sync ? partial/subPattern.size() : OFF_SYNC_DUR));
             }
           }
+        }
       } else break;
     }
     return "line is off.\n";
