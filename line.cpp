@@ -26,11 +26,13 @@
 using namespace std;
 
 const float DEFAULT_BPM = 60.0;
+const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const string PROMPT = "line$ ";
 const string VERSION = "0.1";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
+
 
 // namespace {
   struct State {
@@ -40,12 +42,69 @@ const uint8_t OFF_SYNC_DUR = 100; // milliseconds
     
     State()
       : running(true)
-      , link(119)
+      , link(DEFAULT_BPM)
       , audioPlatform(link)
     {
     }
   };
 // }
+
+void sendIt(vector<vector<uint16_t>> _patt,
+ uint8_t _ch,
+ unsigned long partial,
+ const double& tempo,
+ const double& _phase,
+ const std::chrono::microseconds time,
+ const ableton::Link::SessionState sessionState,
+ const double quantum,
+ vector<uint8_t>& noteMessage,
+ RtMidiOut& midiOut) {
+
+  const auto beats = sessionState.beatAtTime(time, quantum);
+  const auto phase = sessionState.phaseAtTime(time, quantum);
+  
+  // partial *= 0.9;
+  
+  if (phase >= 0.0 && phase <= 0.15) { 
+    for (auto& subPattern : _patt) {
+      for (auto& n : subPattern) {
+        noteMessage[0] = 144+_ch;
+        noteMessage[1] = n;
+        noteMessage[2] = 110;//((n == REST_VAL) || muted) ? 0 : amplitude;
+        midiOut.sendMessage(&noteMessage);
+
+        // const auto ah = chrono::milliseconds(partial/subPattern.size());       
+        // std::cout << ah.count() << " " << std::flush;
+        // std::this_thread::sleep_for(ah);
+        std::this_thread::sleep_for(chrono::milliseconds(static_cast<unsigned long>(partial/subPattern.size()*0.98)));
+
+        noteMessage[0] = 128+_ch;
+        noteMessage[1] = n;
+        midiOut.sendMessage(&noteMessage);
+      }
+    }
+  }
+  /*
+  if (phase >= 0.0 && phase < 0.15) {
+    for (auto& subPattern : _patt) {
+      for (auto& n : subPattern) {
+        std::cout << n << " " << std::flush;
+        std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
+      }
+    }
+ }*/
+  
+  // std::cout << _ch << ":" << phase << " " << std::flush;
+  // std::cout << partial << " " << std::flush;
+  /*for (auto& subPattern : _patt) {
+    for (auto& n : subPattern) {
+      std::cout << tempo << " " << partial << " " << std::flush;
+      long ah = partial/subPattern.size()*0.9;
+      std::this_thread::sleep_for(chrono::milliseconds(ah));
+    }
+  }*/
+    // std::this_thread::sleep_for(chrono::milliseconds(partial));
+}
 
 void disableBufferedInput()
 {
@@ -81,10 +140,6 @@ void replaceRests(string& s) {
   }
 }
 
-const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
-  return DEFAULT_BPM/bpm*barDur;
-}
-
 void displayOptionsMenu(string menuVers="") {
   cout << "----------------------" << endl;
   cout << "  line " << VERSION << " midi seq  " << endl;
@@ -111,7 +166,7 @@ void displayOptionsMenu(string menuVers="") {
   }
   cout << "----------------------" << endl;
   
-  if (rand()%10+1 == 1) cout << "          author:pd3v" << endl;
+  if (int r = rand()%5 == 1) cout << r << "          author:pd3v" << endl; else cout << r; 
 }
 
 float amplitude = 127;
@@ -166,12 +221,23 @@ vector<vector<uint16_t>> xscramble(vector<vector<uint16_t>> _pattern) {
   return _pattern;
 }
 
+const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
+  return DEFAULT_BPM/bpm*barDur;
+}
+
+long barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
+
+void ohBpm(double _bpm) {
+  barDur = bpm(_bpm,REF_BAR_DUR);
+  std::cout << __FUNCTION__ << " bpm:" << _bpm << std::endl << std::flush; 
+}
+
 int main() {
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
 
-  const uint16_t refBarDur = 4000; // milliseconds
-  long barDur = bpm(DEFAULT_BPM,refBarDur);
+  // const uint16_t refBarDur = 4000; // milliseconds
+  // long barDur = bpm(DEFAULT_BPM,refBarDur);
   
   vector<uint8_t> noteMessage;
   vector<vector<uint16_t>> pattern{};
@@ -194,13 +260,16 @@ int main() {
 
   State state;
   const auto tempo = state.link.captureAppSessionState().tempo();
+  std::cout << "tempo=" << tempo << std::flush;
+  barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
   auto& engine = state.audioPlatform.mEngine;
   state.link.enable(!state.link.isEnabled());
-    
-  noteMessage.push_back(0);
-  noteMessage.push_back(0);
-  noteMessage.push_back(0);
+  state.link.setTempoCallback(ohBpm);
   
+  noteMessage.push_back(0);
+  noteMessage.push_back(0);
+  noteMessage.push_back(0);
+
   auto fut = async(launch::async, [&](){
     unsigned long partial = 0;
     vector<vector<uint16_t>> _patt{};
@@ -226,9 +295,19 @@ int main() {
     cv.wait(lckWait, [&](){return soundingThread == true;});
     lock_guard<mutex> lckPattern(mtxPattern);
 
-    //state.link.enable(!state.link.isEnabled());
+    // state.link.enable(!state.link.isEnabled());
+    state.link.enable(true);
     
     while (soundingThread) {
+      const std::chrono::microseconds time = state.link.clock().micros();
+      const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
+      partial = barDur/pattern.size();
+      _patt = pattern;
+      _ch = ch;
+      sendIt(_patt,_ch,partial,state.link.captureAppSessionState().tempo(),phase,time,sessionState,quantum,noteMessage,midiOut);
+      std::this_thread::sleep_for(chrono::milliseconds(5));
+      
+      /*
       if (!pattern.empty()) {
         partial = barDur/pattern.size();
         _patt = pattern;
@@ -266,6 +345,7 @@ int main() {
           }
         }
       } else break;
+      */
     }
     return "line is off.\n";
   });
@@ -302,7 +382,11 @@ int main() {
           }
       } else if (opt.at(0) == 'b') {
           try {
-            barDur = bpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))),refBarDur);
+            barDur = bpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))),REF_BAR_DUR);
+            engine.setTempo(std::abs(std::stoi(opt.substr(1,opt.size()-1))));
+            // ohBpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))));
+            // bpm();
+            // std::cout << std::abs(std::stoi(opt.substr(1,opt.size()-1))) << std::flush;
           } catch (...) {
             cerr << "Invalid bpm value." << endl;
           }
