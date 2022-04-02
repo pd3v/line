@@ -63,19 +63,14 @@ void sendIt(vector<vector<uint16_t>> _patt,
   const auto beats = sessionState.beatAtTime(time, quantum);
   const auto phase = sessionState.phaseAtTime(time, quantum);
   
-  // partial *= 0.9;
-  
   if (phase >= 0.0 && phase <= 0.15) { 
     for (auto& subPattern : _patt) {
       for (auto& n : subPattern) {
         noteMessage[0] = 144+_ch;
         noteMessage[1] = n;
-        noteMessage[2] = 110;//((n == REST_VAL) || muted) ? 0 : amplitude;
+        noteMessage[2] = 120;
         midiOut.sendMessage(&noteMessage);
 
-        // const auto ah = chrono::milliseconds(partial/subPattern.size());       
-        // std::cout << ah.count() << " " << std::flush;
-        // std::this_thread::sleep_for(ah);
         std::this_thread::sleep_for(chrono::milliseconds(static_cast<unsigned long>(partial/subPattern.size()*0.98)));
 
         noteMessage[0] = 128+_ch;
@@ -84,26 +79,6 @@ void sendIt(vector<vector<uint16_t>> _patt,
       }
     }
   }
-  /*
-  if (phase >= 0.0 && phase < 0.15) {
-    for (auto& subPattern : _patt) {
-      for (auto& n : subPattern) {
-        std::cout << n << " " << std::flush;
-        std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
-      }
-    }
- }*/
-  
-  // std::cout << _ch << ":" << phase << " " << std::flush;
-  // std::cout << partial << " " << std::flush;
-  /*for (auto& subPattern : _patt) {
-    for (auto& n : subPattern) {
-      std::cout << tempo << " " << partial << " " << std::flush;
-      long ah = partial/subPattern.size()*0.9;
-      std::this_thread::sleep_for(chrono::milliseconds(ah));
-    }
-  }*/
-    // std::this_thread::sleep_for(chrono::milliseconds(partial));
 }
 
 void disableBufferedInput()
@@ -227,18 +202,15 @@ const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
 
 long barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
 
-void ohBpm(double _bpm) {
+void bpmLink(double _bpm) {
   barDur = bpm(_bpm,REF_BAR_DUR);
-  std::cout << __FUNCTION__ << " bpm:" << _bpm << std::endl << std::flush; 
+  // std::cout << __FUNCTION__ << " bpm:" << _bpm << std::endl << std::flush; 
 }
 
 int main() {
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
 
-  // const uint16_t refBarDur = 4000; // milliseconds
-  // long barDur = bpm(DEFAULT_BPM,refBarDur);
-  
   vector<uint8_t> noteMessage;
   vector<vector<uint16_t>> pattern{};
   uint8_t ch = 0;
@@ -260,11 +232,11 @@ int main() {
 
   State state;
   const auto tempo = state.link.captureAppSessionState().tempo();
-  std::cout << "tempo=" << tempo << std::flush;
-  barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
   auto& engine = state.audioPlatform.mEngine;
   state.link.enable(!state.link.isEnabled());
-  state.link.setTempoCallback(ohBpm);
+  state.link.setTempoCallback(bpmLink);
+
+  barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
   
   noteMessage.push_back(0);
   noteMessage.push_back(0);
@@ -284,11 +256,11 @@ int main() {
     const double quantum = state.audioPlatform.mEngine.quantum();
     const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
 
-    const auto enabled = linkEnabled ? "yes" : "no";
+    // const auto enabled = linkEnabled ? "yes" : "no";
     const auto beats = sessionState.beatAtTime(time, quantum);
     const auto phase = sessionState.phaseAtTime(time, quantum);
-    const auto startStop = startStopSyncOn ? "yes" : "no";
-    const auto isPlaying = sessionState.isPlaying() ? "[playing]" : "[stopped]";
+    // const auto startStop = startStopSyncOn ? "yes" : "no";
+    // const auto isPlaying = sessionState.isPlaying() ? "[playing]" : "[stopped]";
     
     // waiting for live coder's first pattern 
     unique_lock<mutex> lckWait(mtxWait);
@@ -301,13 +273,15 @@ int main() {
     while (soundingThread) {
       const std::chrono::microseconds time = state.link.clock().micros();
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
-      partial = barDur/pattern.size();
-      _patt = pattern;
-      _ch = ch;
-      sendIt(_patt,_ch,partial,state.link.captureAppSessionState().tempo(),phase,time,sessionState,quantum,noteMessage,midiOut);
-      std::this_thread::sleep_for(chrono::milliseconds(5));
+      const auto beats = sessionState.beatAtTime(time, quantum);
+      const auto phase = sessionState.phaseAtTime(time, quantum);
+  
+      // partial = barDur/pattern.size();
+      // _patt = pattern;
+      // _ch = ch;
+      // sendIt(_patt,_ch,partial,state.link.captureAppSessionState().tempo(),phase,time,sessionState,quantum,noteMessage,midiOut);
+      // std::this_thread::sleep_for(chrono::milliseconds(5));
       
-      /*
       if (!pattern.empty()) {
         partial = barDur/pattern.size();
         _patt = pattern;
@@ -315,37 +289,37 @@ int main() {
         _ccCh = ccCh;
         _rNotes = rNotes;
         // _sync = sync;
-        if (phase >= 0.0 && phase < 0.5)  {
-        if (_rNotes)
-          for (auto& subPattern : _patt) {
-            for (auto& n : subPattern) {
-              noteMessage[0] = 144+_ch;
-              noteMessage[1] = n;
-              noteMessage[2] = ((n == REST_VAL) || muted) ? 0 : amplitude;
-              midiOut.sendMessage(&noteMessage);
-              
-              std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
+        
+        if (_rNotes) {
+          if (phase >= 0.0 && phase <= 0.15)  {
+            for (auto& subPattern : _patt) {
+              for (auto& n : subPattern) {
+                noteMessage[0] = 144+_ch;
+                noteMessage[1] = n;
+                noteMessage[2] = ((n == REST_VAL) || muted) ? 0 : amplitude;
+                midiOut.sendMessage(&noteMessage);
+                
+                std::this_thread::sleep_for(chrono::milliseconds(static_cast<unsigned long>(partial/subPattern.size()*0.98)));
 
-              noteMessage[0] = 128+_ch;
-              noteMessage[1] = n;
-              noteMessage[2] = 0;
-              midiOut.sendMessage(&noteMessage);
+                noteMessage[0] = 128+_ch;
+                noteMessage[1] = n;
+                noteMessage[2] = 0;
+                midiOut.sendMessage(&noteMessage);
+              }
             }
           }
-        else
-          for (auto& subPattern : _patt) {
-            for (auto& n : subPattern) {
-              noteMessage[0] = 176+_ch;
-              noteMessage[1] = _ccCh;
-              noteMessage[2] = n;
-              midiOut.sendMessage(&noteMessage);
+        } else
+            for (auto& subPattern : _patt) {
+              for (auto& n : subPattern) {
+                noteMessage[0] = 176+_ch;
+                noteMessage[1] = _ccCh;
+                noteMessage[2] = n;
+                midiOut.sendMessage(&noteMessage);
               
-              std::this_thread::sleep_for(chrono::milliseconds(sync ? partial/subPattern.size() : OFF_SYNC_DUR));
+                std::this_thread::sleep_for(chrono::milliseconds(sync ? static_cast<unsigned long>(partial/subPattern.size()*0.98) : OFF_SYNC_DUR));
+              }
             }
-          }
-        }
       } else break;
-      */
     }
     return "line is off.\n";
   });
