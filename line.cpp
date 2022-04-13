@@ -27,59 +27,26 @@ using namespace std;
 
 const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
-const string PROMPT = "line$ ";
-const string VERSION = "0.1";
+const string PROMPT = "line>";
+const string VERSION = "0.2";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
 
+long iterTime = 5; // milliseconds
 
-// namespace {
-  struct State {
-    std::atomic<bool> running;
-    ableton::Link link;
-    ableton::linkaudio::AudioPlatform audioPlatform;
-    
-    State()
-      : running(true)
-      , link(DEFAULT_BPM)
-      , audioPlatform(link)
-    {
-    }
-  };
-// }
-
-void sendIt(vector<vector<uint16_t>> _patt,
- uint8_t _ch,
- unsigned long partial,
- const double& tempo,
- const double& _phase,
- const std::chrono::microseconds time,
- const ableton::Link::SessionState sessionState,
- const double quantum,
- vector<uint8_t>& noteMessage,
- RtMidiOut& midiOut) {
-
-  const auto beats = sessionState.beatAtTime(time, quantum);
-  const auto phase = sessionState.phaseAtTime(time, quantum);
+struct State {
+  std::atomic<bool> running;
+  ableton::Link link;
+  ableton::linkaudio::AudioPlatform audioPlatform;
   
-  if (phase >= 0.0 && phase <= 0.15) { 
-    for (auto& subPattern : _patt) {
-      for (auto& n : subPattern) {
-        noteMessage[0] = 144+_ch;
-        noteMessage[1] = n;
-        noteMessage[2] = 120;
-        midiOut.sendMessage(&noteMessage);
-
-        std::this_thread::sleep_for(chrono::milliseconds(static_cast<unsigned long>(partial/subPattern.size()*0.98)));
-
-        noteMessage[0] = 128+_ch;
-        noteMessage[1] = n;
-        midiOut.sendMessage(&noteMessage);
-      }
-    }
+  State()
+    : running(true)
+    , link(DEFAULT_BPM)
+    , audioPlatform(link)
+  {
   }
-}
+};
 
 void disableBufferedInput()
 {
@@ -116,20 +83,20 @@ void replaceRests(string& s) {
 }
 
 void displayOptionsMenu(string menuVers="") {
-  cout << "----------------------" << endl;
+  cout << "-----------------------" << endl;
   cout << "  line " << VERSION << " midi seq  " << endl;
-  cout << "----------------------" << endl;
-  cout << "..<[n] >    pattern   " << endl;
-  cout << "..b<[n]>    bpm       " << endl;
-  cout << "..ch<[n]>   midi ch   " << endl;
-  cout << "..m         this menu " << endl;
-  cout << "..d         extnd menu" << endl;
-  cout << "..e         exit      " << endl;
-  cout << "..a<[n]>    amplitude " << endl;
-  cout << "..r         reverse   " << endl;
-  cout << "..s         scramble  " << endl;
-  cout << "..x         xscramble " << endl;
-  cout << "..l<[n]>    last patt " << endl;
+  cout << "-----------------------" << endl;
+  cout << "..<[n] >    pattern    " << endl;
+  cout << "..b<[n]>    bpm        " << endl;
+  cout << "..ch<[n]>   midi ch    " << endl;
+  cout << "..m         this menu  " << endl;
+  cout << "..d         extnd menu " << endl;
+  cout << "..e         exit       " << endl;
+  cout << "..a<[n]>    amplitude  " << endl;
+  cout << "..r         reverse    " << endl;
+  cout << "..s         scramble   " << endl;
+  cout << "..x         xscramble  " << endl;
+  cout << "..l<[n]>    last 3 patt" << endl;
   
   if (menuVers == "d") {
     cout << "..cc<[n]>   cc ch mode" << endl;
@@ -138,10 +105,11 @@ void displayOptionsMenu(string menuVers="") {
     cout << "..u         unmute    " << endl;
     cout << "..i         sync cc   " << endl;
     cout << "..o         async cc  " << endl;
+    cout << "..lb        label     " << endl;
   }
   cout << "----------------------" << endl;
   
-  if (int r = rand()%5 == 1) cout << r << "          author:pd3v" << endl; else cout << r; 
+  if (int r = rand()%5 == 1) cout << "          author:pd3v" << endl;
 }
 
 float amplitude = 127;
@@ -204,8 +172,9 @@ long barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
 
 void bpmLink(double _bpm) {
   barDur = bpm(_bpm,REF_BAR_DUR);
-  // std::cout << __FUNCTION__ << " bpm:" << _bpm << std::endl << std::flush; 
 }
+
+string prompt = PROMPT;
 
 int main() {
   auto midiOut = RtMidiOut();
@@ -216,7 +185,7 @@ int main() {
   uint8_t ch = 0;
   uint8_t ccCh = 0;
   bool rNotes = true;
-  bool sync = false;
+  bool sync = true;
   deque<vector<vector<uint16_t>>> last3Patterns{};
   string opt;
   
@@ -248,7 +217,7 @@ int main() {
     uint8_t _ch = 0;
     uint8_t _ccCh = 0;
     bool _rNotes = true;
-    // bool sync = false;
+
     const std::chrono::microseconds time = state.link.clock().micros();
     const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
     const bool linkEnabled = state.link.isEnabled();
@@ -256,18 +225,11 @@ int main() {
     const double quantum = state.audioPlatform.mEngine.quantum();
     const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
 
-    // const auto enabled = linkEnabled ? "yes" : "no";
-    const auto beats = sessionState.beatAtTime(time, quantum);
-    const auto phase = sessionState.phaseAtTime(time, quantum);
-    // const auto startStop = startStopSyncOn ? "yes" : "no";
-    // const auto isPlaying = sessionState.isPlaying() ? "[playing]" : "[stopped]";
-    
     // waiting for live coder's first pattern 
     unique_lock<mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
     lock_guard<mutex> lckPattern(mtxPattern);
 
-    // state.link.enable(!state.link.isEnabled());
     state.link.enable(true);
     
     while (soundingThread) {
@@ -276,30 +238,24 @@ int main() {
       const auto beats = sessionState.beatAtTime(time, quantum);
       const auto phase = sessionState.phaseAtTime(time, quantum);
   
-      // partial = barDur/pattern.size();
-      // _patt = pattern;
-      // _ch = ch;
-      // sendIt(_patt,_ch,partial,state.link.captureAppSessionState().tempo(),phase,time,sessionState,quantum,noteMessage,midiOut);
-      // std::this_thread::sleep_for(chrono::milliseconds(5));
-      
       if (!pattern.empty()) {
         partial = barDur/pattern.size();
         _patt = pattern;
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
-        // _sync = sync;
-        
+
         if (_rNotes) {
           if (phase >= 0.0 && phase <= 0.15)  {
             for (auto& subPattern : _patt) {
+              partial = barDur/pattern.size();
               for (auto& n : subPattern) {
                 noteMessage[0] = 144+_ch;
                 noteMessage[1] = n;
                 noteMessage[2] = ((n == REST_VAL) || muted) ? 0 : amplitude;
                 midiOut.sendMessage(&noteMessage);
-                
-                std::this_thread::sleep_for(chrono::milliseconds(static_cast<unsigned long>(partial/subPattern.size()*0.98)));
+
+                std::this_thread::sleep_for(chrono::milliseconds(static_cast<unsigned long>(partial/subPattern.size()-iterTime)));
 
                 noteMessage[0] = 128+_ch;
                 noteMessage[1] = n;
@@ -309,16 +265,30 @@ int main() {
             }
           }
         } else
-            for (auto& subPattern : _patt) {
-              for (auto& n : subPattern) {
-                noteMessage[0] = 176+_ch;
-                noteMessage[1] = _ccCh;
-                noteMessage[2] = n;
-                midiOut.sendMessage(&noteMessage);
-              
-                std::this_thread::sleep_for(chrono::milliseconds(sync ? static_cast<unsigned long>(partial/subPattern.size()*0.98) : OFF_SYNC_DUR));
+            if (sync && phase >= 0.0 && phase <= 0.15)  {
+              for (auto& subPattern : _patt) {
+                partial = barDur/pattern.size();
+                for (auto& n : subPattern) {
+                  noteMessage[0] = 176+_ch;
+                  noteMessage[1] = _ccCh;
+                  noteMessage[2] = n;
+                  midiOut.sendMessage(&noteMessage);
+                
+                  std::this_thread::sleep_for(chrono::milliseconds(static_cast<unsigned long>(partial/subPattern.size()*0.995)));
+                }
               }
-            }
+            } else if (!sync) {
+              for (auto& subPattern : _patt) {
+                for (auto& n : subPattern) {
+                  noteMessage[0] = 176+_ch;
+                  noteMessage[1] = _ccCh;
+                  noteMessage[2] = n;
+                  midiOut.sendMessage(&noteMessage);
+                
+                  std::this_thread::sleep_for(chrono::milliseconds(OFF_SYNC_DUR));
+                }
+              }
+            } 
       } else break;
     }
     return "line is off.\n";
@@ -327,7 +297,7 @@ int main() {
   displayOptionsMenu("");
   
   while (!exit) {
-    std::cout << PROMPT;
+    std::cout << prompt;
     getline(cin, opt);
     
     if (!opt.empty()) {
@@ -358,9 +328,6 @@ int main() {
           try {
             barDur = bpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))),REF_BAR_DUR);
             engine.setTempo(std::abs(std::stoi(opt.substr(1,opt.size()-1))));
-            // ohBpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))));
-            // bpm();
-            // std::cout << std::abs(std::stoi(opt.substr(1,opt.size()-1))) << std::flush;
           } catch (...) {
             cerr << "Invalid bpm value." << endl;
           }
@@ -396,6 +363,10 @@ int main() {
           sync= true;
       } else if (opt == "o") {    
           sync= false;
+      } else if (opt.substr(0,2) == "lb") {    
+          prompt = PROMPT;
+          if (opt.length() > 2)
+            prompt = PROMPT.substr(0,PROMPT.length()-1)+" ~"+opt.substr(2,opt.length()-1)+PROMPT.substr(PROMPT.length()-1,PROMPT.length());
       } else {
         // parser
         regex_search(opt, matchExp, regExp);

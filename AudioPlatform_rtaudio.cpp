@@ -40,56 +40,9 @@ AudioPlatform::AudioPlatform(Link& link)
   start();
 }
 
-AudioPlatform::~AudioPlatform()
-{
+AudioPlatform::~AudioPlatform() {
   stop();
-  uninitialize();
 }
-
-
-// int AudioPlatform::audioCallback(const void* /*inputBuffer*/,
-//   void* outputBuffer,
-//   unsigned long inNumFrames,
-//   //const PaStreamCallbackTimeInfo* /*timeInfo*/,
-//   //PaStreamCallbackFlags /*statusFlags*/,
-//   const RtAudioStreamStatus* /*timeInfo*/,
-//   RtAudioStreamFlags /*statusFlags*/,
-//   void* userData)
-// {
-//   using namespace std::chrono;
-//   float* buffer = static_cast<float*>(outputBuffer);
-//   AudioPlatform& platform = *static_cast<AudioPlatform*>(userData);
-//   AudioEngine& engine = platform.mEngine;
-
-//   const auto hostTime =
-//     platform.mHostTimeFilter.sampleTimeToHostTime(platform.mSampleTime);
-
-//   platform.mSampleTime += static_cast<double>(inNumFrames);
-
-//   const auto bufferBeginAtOutput = hostTime + engine.mOutputLatency.load();
-
-//   engine.audioCallback(bufferBeginAtOutput, inNumFrames);
-
-//   for (unsigned long i = 0; i < inNumFrames; ++i)
-//   {
-//     buffer[i * 2] = static_cast<float>(engine.mBuffer[i]);
-//     buffer[i * 2 + 1] = static_cast<float>(engine.mBuffer[i]);
-//   }
-
-//   return paContinue;
-// }
-
-// int AudioPlatform::audioCallback(const void* /*inputBuffer*/,
-//   void* outputBuffer,
-//   unsigned long inNumFrames,
-//   //const PaStreamCallbackTimeInfo* /*timeInfo*/,
-//   //PaStreamCallbackFlags /*statusFlags*/,
-//   const RtAudioStreamStatus* /*timeInfo*/,
-//   RtAudioStreamFlags /*statusFlags*/,
-//   void* userData)
-// {
-//   return 0;
-// }
 
 //RtAudio
 int AudioPlatform::audioCallback( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,double streamTime, RtAudioStreamStatus statusFlags, void *userData ) {
@@ -97,8 +50,6 @@ int AudioPlatform::audioCallback( void *outputBuffer, void *inputBuffer, unsigne
   float* buffer = static_cast<float*>(outputBuffer);
   AudioPlatform& platform = *static_cast<AudioPlatform*>(userData);
   AudioEngine& engine = platform.mEngine;
-
-  // std::cout << __FUNCTION__ << std::endl;
 
   const auto hostTime = platform.mHostTimeFilter.sampleTimeToHostTime(platform.mSampleTime);
 
@@ -114,67 +65,10 @@ int AudioPlatform::audioCallback( void *outputBuffer, void *inputBuffer, unsigne
     buffer[i * 2 + 1] = static_cast<float>(engine.mBuffer[i]);
   }
 
-  // return paContinue;
-
   return 0;
 }
-// int AudioPlatform::audioCallback(const void* /*inputBuffer*/,
-//   void* outputBuffer,
-//   unsigned long inNumFrames,
-//   //const PaStreamCallbackTimeInfo* /*timeInfo*/,
-//   //PaStreamCallbackFlags /*statusFlags*/,
-//   const RtAudioStreamStatus* /*timeInfo*/,
-//   RtAudioStreamFlags /*statusFlags*/,
-//   void* userData)
-// {
-//   return 0;
-// }
 
-
-
-void AudioPlatform::initialize()
-{
-  std::cout << __FUNCTION__ << std::endl;
-  /* PaError result = Pa_Initialize();
-  if (result)
-  {
-    std::cerr << "Could not initialize Audio Engine. " << result << std::endl;
-    std::terminate();
-  }
-
-  PaStreamParameters outputParameters;
-  outputParameters.device = Pa_GetDefaultOutputDevice();
-  if (outputParameters.device == paNoDevice)
-  {
-    std::cerr << "Could not get Audio Device. " << std::endl;
-    std::terminate();
-  }
-
-  outputParameters.channelCount = 2;
-  outputParameters.sampleFormat = paFloat32;
-  outputParameters.suggestedLatency =
-    Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
-  outputParameters.hostApiSpecificStreamInfo = nullptr;
-  mEngine.mOutputLatency.store(
-    std::chrono::microseconds(llround(outputParameters.suggestedLatency * 1.0e6)));
-  result = Pa_OpenStream(&pStream, nullptr, &outputParameters, mEngine.mSampleRate,
-    mEngine.mBuffer.size(), paClipOff, &audioCallback, this);
-
-  if (result)
-  {
-    std::cerr << "Could not open stream. " << result << std::endl;
-    std::terminate();
-  }
-
-  if (!pStream)
-  {
-    std::cerr << "No valid audio stream." << std::endl;
-    std::terminate();
-  }
-  */
-
-  std::cout << "-----Initialize audio------\n";
-
+void AudioPlatform::initialize() {
   // RtAudio dac;
   if ( dac.getDeviceCount() == 0 ) exit( 0 );
   RtAudio::StreamParameters parameters;
@@ -194,41 +88,33 @@ void AudioPlatform::initialize()
   }
 }
 
+// RtAudio does not use this
+/*
 void AudioPlatform::uninitialize()
 {
-  // PaError result = Pa_CloseStream(pStream);
-  // if (result)
-  // {
-  //   std::cerr << "Could not close Audio Stream. " << result << std::endl;
-  // }
-  // Pa_Terminate();
-
-  // if (!pStream)
-  // {
-  //   std::cerr << "No valid audio stream." << std::endl;
-  //   std::terminate();
-  // }
-}
-
-
-void AudioPlatform::start()
-{
-  /*
-  PaError result = Pa_StartStream(pStream);
+  PaError result = Pa_CloseStream(pStream);
   if (result)
   {
-    std::cerr << "Could not start Audio Stream. " << result << std::endl;
+    std::cerr << "Could not close Audio Stream. " << result << std::endl;
   }
-  */
+  Pa_Terminate();
 
+  if (!pStream)
+  {
+    std::cerr << "No valid audio stream." << std::endl;
+    std::terminate();
+  }
+}
+*/
+
+
+void AudioPlatform::start() {
   try {
-    // dac.openStream( &parameters, NULL, RTAUDIO_FLOAT64,
-    //                 sampleRate, &bufferFrames, &saw, (void *)&data );
     dac.startStream();
   }
   catch ( RtAudioError& e ) {
     e.printMessage();
-    // exit( 0 );
+    exit(0);
   }
 }
 

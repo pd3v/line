@@ -22,7 +22,6 @@
 #include "AudioEngine.hpp"
 #include <ableton/link/HostTimeFilter.hpp>
 #include <ableton/platforms/Config.hpp>
-// #include <portaudio.h>
 #include "externals/rtaudio/RtAudio.h"
 
 namespace ableton
@@ -39,32 +38,22 @@ public:
   AudioEngine mEngine;
 
 private:
-
-  // static int audioCallback(const void* inputBuffer,
-  //   void* outputBuffer,
-  //   unsigned long inNumFrames,
-  //   // const PaStreamCallbackTimeInfo* timeInfo,
-  //   // PaStreamCallbackFlags statusFlags,
-  //   const RtAudioStreamStatus* timeInfo,
-  //   RtAudioStreamFlags statusFlags,
-  //   void* userData);
-
   //RtAudio
   static int audioCallback(void* outputBuffer,
     void* inputBuffer,
     unsigned int nBufferFrames,
     double streamTime,
     RtAudioStreamStatus statusFlags,
-    void *userData);  
+    void *userData
+  );  
     
   void initialize();
-  void uninitialize();
+  // void uninitialize(); // RtAudio does not use it
   void start();
   void stop();
 
   link::HostTimeFilter<link::platform::Clock> mHostTimeFilter;
   double mSampleTime;
-  // PaStream* pStream;
   RtAudio dac;
 };
 
