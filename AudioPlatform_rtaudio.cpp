@@ -107,7 +107,6 @@ void AudioPlatform::uninitialize()
 }
 */
 
-
 void AudioPlatform::start() {
   try {
     dac.startStream();
