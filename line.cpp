@@ -112,7 +112,7 @@ void displayOptionsMenu(string menuVers="") {
   if (int r = rand()%5 == 1) cout << "          author:pd3v" << endl;
 }
 
-float amplitude = 127;
+float amplitude = 127.;
 bool muted = false;
 
 void amp(float _amplitude) {
