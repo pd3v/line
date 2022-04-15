@@ -69,7 +69,6 @@ int AudioPlatform::audioCallback( void *outputBuffer, void *inputBuffer, unsigne
 }
 
 void AudioPlatform::initialize() {
-  // RtAudio dac;
   if ( dac.getDeviceCount() == 0 ) exit( 0 );
   RtAudio::StreamParameters parameters;
   parameters.deviceId = dac.getDefaultOutputDevice();
@@ -118,31 +117,17 @@ void AudioPlatform::start() {
 }
 
 
-void AudioPlatform::stop()
-{
-  /*
-  if (pStream == nullptr)
-  {
-    return;
-  }
-
-  PaError result = Pa_StopStream(pStream);
-  if (result)
-  {
-    std::cerr << "Could not stop Audio Stream. " << result << std::endl;
-    std::terminate();
-  }
-  */
-
- try {
+void AudioPlatform::stop() {
+  try {
     // Stop the stream
     dac.stopStream();
   }
   catch (RtAudioError& e) {
     e.printMessage();
-  }
-  if ( dac.isStreamOpen() ) dac.closeStream();
-
+    std::terminate();
+  } 
+  
+  if (dac.isStreamOpen()) dac.closeStream();
 }
 
 } // namespace linkaudio
