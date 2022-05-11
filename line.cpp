@@ -23,12 +23,12 @@
 #include <termios.h>
 #endif
 
-using namespace std;
+// using namespace std;
 
 const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
-const string PROMPT = "line>";
-const string VERSION = "0.2";
+const std::string PROMPT = "line>";
+const std::string VERSION = "0.2";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
@@ -48,8 +48,7 @@ struct State {
   }
 };
 
-void disableBufferedInput()
-{
+void disableBufferedInput() {
 #if defined(LINK_PLATFORM_UNIX)
   termios t;
   tcgetattr(STDIN_FILENO, &t);
@@ -58,8 +57,7 @@ void disableBufferedInput()
 #endif
 }
 
-void enableBufferedInput()
-{
+void enableBufferedInput() {
 #if defined(LINK_PLATFORM_UNIX)
   termios t;
   tcgetattr(STDIN_FILENO, &t);
@@ -68,7 +66,7 @@ void enableBufferedInput()
 #endif
 }
 
-void replaceRests(string& s) {
+void replaceRests(std::string& s) {
   auto rests = true;
   std::size_t p;
 
@@ -76,13 +74,15 @@ void replaceRests(string& s) {
     p = s.find(REST_SYMBOL);
     if (p != std::string::npos) {
       s.erase(p,1);
-      s.insert(p,to_string(REST_VAL));
+      s.insert(p,std::to_string(REST_VAL));
     } else 
         rests = false;
   }
 }
 
-void displayOptionsMenu(string menuVers="") {
+void displayOptionsMenu(std::string menuVers="") {
+  using namespace std;
+
   cout << "-----------------------" << endl;
   cout << "  line " << VERSION << " midi seq  " << endl;
   cout << "-----------------------" << endl;
@@ -127,22 +127,22 @@ void unmute() {
   muted = false;
 }
 
-vector<vector<uint16_t>> reverse(vector<vector<uint16_t>> _pattern) {
+std::vector<std::vector<uint16_t>> reverse(std::vector<std::vector<uint16_t>> _pattern) {
   for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {std::reverse(_subPattern.begin(),_subPattern.end());});
   std::reverse(_pattern.begin(),_pattern.end());
 
   return _pattern;
 }
 
-vector<vector<uint16_t>> scramble(vector<vector<uint16_t>> _pattern) {
+std::vector<std::vector<uint16_t>> scramble(std::vector<std::vector<uint16_t>> _pattern) {
   for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {std::random_shuffle(_subPattern.begin(),_subPattern.end());});
   std::random_shuffle(_pattern.begin(),_pattern.end());
 
   return _pattern;
 }
 
-vector<vector<uint16_t>> xscramble(vector<vector<uint16_t>> _pattern) {
-  vector<uint16_t> pattValues {};
+std::vector<std::vector<uint16_t>> xscramble(std::vector<std::vector<uint16_t>> _pattern) {
+  std::vector<uint16_t> pattValues {};
 
   for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {
     for_each(_subPattern.begin(),_subPattern.end(),[&](auto& _v) {
@@ -174,26 +174,26 @@ void bpmLink(double _bpm) {
   barDur = bpm(_bpm,REF_BAR_DUR);
 }
 
-string prompt = PROMPT;
+std::string prompt = PROMPT;
 
 int main() {
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
 
-  vector<uint8_t> noteMessage;
-  vector<vector<uint16_t>> pattern{};
+  std::vector<uint8_t> noteMessage;
+  std::vector<std::vector<uint16_t>> pattern{};
   uint8_t ch = 0;
   uint8_t ccCh = 0;
   bool rNotes = true;
   bool sync = true;
-  deque<vector<vector<uint16_t>>> last3Patterns{};
-  string opt;
+  std::deque<std::vector<std::vector<uint16_t>>> last3Patterns{};
+  std::string opt;
   
-  mutex mtxWait, mtxPattern;
-  condition_variable cv;
+  std::mutex mtxWait, mtxPattern;
+  std::condition_variable cv;
   
-  smatch matchExp;
-  regex regExp(R"([a-zA-Z!\"#$%&\\/()=?±§*+´`|\\^~<>;,:-_]|[.]{2,})");
+  std::smatch matchExp;
+  std::regex regExp(R"([a-zA-Z!\"#$%&\\/()=?±§*+´`|\\^~<>;,:-_]|[.]{2,})");
   
   bool soundingThread = false;
   bool exit = false;
@@ -211,9 +211,9 @@ int main() {
   noteMessage.push_back(0);
   noteMessage.push_back(0);
 
-  auto fut = async(launch::async, [&](){
+  auto sequencer = async(std::  launch::async, [&](){
     unsigned long partial = 0;
-    vector<vector<uint16_t>> _patt{};
+    std::vector<std::vector<uint16_t>> _patt{};
     uint8_t _ch = 0;
     uint8_t _ccCh = 0;
     bool _rNotes = true;
@@ -226,9 +226,9 @@ int main() {
     const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
 
     // waiting for live coder's first pattern 
-    unique_lock<mutex> lckWait(mtxWait);
+    std::unique_lock<std::mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
-    lock_guard<mutex> lckPattern(mtxPattern);
+    std::lock_guard<std::mutex> lckPattern(mtxPattern);
 
     state.link.enable(true);
     
@@ -239,23 +239,22 @@ int main() {
       const auto phase = sessionState.phaseAtTime(time, quantum);
   
       if (!pattern.empty()) {
-        partial = barDur/pattern.size();
+        // partial = barDur/pattern.size();
         _patt = pattern;
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
 
         if (_rNotes) {
-          if (phase >= 0.0 && phase <= 0.15)  {
+          if (phase >= 0.0 && phase <= 0.15)  {            
             for (auto& subPattern : _patt) {
-              partial = barDur/pattern.size();
               for (auto& n : subPattern) {
                 noteMessage[0] = 144+_ch;
                 noteMessage[1] = n;
                 noteMessage[2] = ((n == REST_VAL) || muted) ? 0 : amplitude;
                 midiOut.sendMessage(&noteMessage);
 
-                std::this_thread::sleep_for(chrono::milliseconds(static_cast<unsigned long>(partial/subPattern.size()-iterTime)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((barDur/pattern.size()/subPattern.size())-iterTime)));
 
                 noteMessage[0] = 128+_ch;
                 noteMessage[1] = n;
@@ -267,14 +266,13 @@ int main() {
         } else
             if (sync && phase >= 0.0 && phase <= 0.15)  {
               for (auto& subPattern : _patt) {
-                partial = barDur/pattern.size();
                 for (auto& n : subPattern) {
                   noteMessage[0] = 176+_ch;
                   noteMessage[1] = _ccCh;
                   noteMessage[2] = n;
                   midiOut.sendMessage(&noteMessage);
                 
-                  std::this_thread::sleep_for(chrono::milliseconds(static_cast<unsigned long>(partial/subPattern.size()*0.995)));
+                  std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((barDur/pattern.size()/subPattern.size())-iterTime)));
                 }
               }
             } else if (!sync) {
@@ -285,7 +283,7 @@ int main() {
                   noteMessage[2] = n;
                   midiOut.sendMessage(&noteMessage);
                 
-                  std::this_thread::sleep_for(chrono::milliseconds(OFF_SYNC_DUR));
+                  std::this_thread::sleep_for(std::chrono::milliseconds(OFF_SYNC_DUR));
                 }
               }
             } 
@@ -298,7 +296,7 @@ int main() {
   
   while (!exit) {
     std::cout << prompt;
-    getline(cin, opt);
+    getline(std::cin, opt);
     
     if (!opt.empty()) {
       if (opt == "m") {
@@ -310,7 +308,7 @@ int main() {
             ch = std::abs(std::stoi(opt.substr(2,opt.size()-1))-1);
           }
           catch (...) {
-            cerr << "Invalid channel value." << endl; 
+            std::cerr << "Invalid channel value." << std::endl; 
           }
       } else if (opt == "n") {
           rNotes = true;
@@ -322,26 +320,25 @@ int main() {
             rNotes = false;
           }
           catch (...) {
-            cerr << "Invalid cc channel value." << endl; 
+            std::cerr << "Invalid cc channel value." << std::endl; 
           }
       } else if (opt.at(0) == 'b') {
           try {
-            barDur = bpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))),REF_BAR_DUR);
             engine.setTempo(std::abs(std::stoi(opt.substr(1,opt.size()-1))));
           } catch (...) {
-            cerr << "Invalid bpm value." << endl;
+            std::cerr << "Invalid bpm value." << std::endl;
           }
       } else if (opt == "e") {
           pattern.clear();
           soundingThread = true;
           cv.notify_one();
-          std::cout << fut.get();
+          std::cout << sequencer.get();
           exit = true;
       } else if (opt.at(0) == 'a') {
           try {
             amp(std::stof(opt.substr(1,opt.size()-1)));
           } catch (...) {
-            cerr << "Invalid amplitude." << endl; 
+            std::cerr << "Invalid amplitude." << std::endl; 
           }
       } else if (opt == "t") {
           mute();
@@ -370,20 +367,20 @@ int main() {
       } else {
         // parser
         regex_search(opt, matchExp, regExp);
-        sregex_iterator pos(opt.cbegin(), opt.cend(), regExp);
-        sregex_iterator end;
+        std::sregex_iterator pos(opt.cbegin(), opt.cend(), regExp);
+        std::sregex_iterator end;
         
         if (pos == end) {
-          vector<vector<uint16_t>> tempPattern{};
+          std::vector<std::vector<uint16_t>> tempPattern{};
           replaceRests(opt);
-          istringstream iss(opt);
+          std::istringstream iss(opt);
           bool subBarFlag = false;
-          vector<uint16_t> subPatt{};
+          std::vector<uint16_t> subPatt{};
   
-          vector<string> results((istream_iterator<string>(iss)), istream_iterator<string>());
+          std::vector<std::string> results((std::istream_iterator<std::string>(iss)), std::istream_iterator<std::string>());
         
-          for_each(results.begin(),results.end(),[&](string i) {
-              string s;
+          for_each(results.begin(),results.end(),[&](std::string i) {
+              std::string s;
 
               try {
                 if (i.substr(0,1) == ".") {
