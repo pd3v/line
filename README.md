@@ -6,7 +6,7 @@
 + 1 instrument or 1 CC
 
 <!-- ![line_screenshot](https://github.com/pd3v/line/blob/develop/line0.1.png) -->
-<img src="https://github.com/pd3v/line/blob/develop/line0.1.png" style="width:70%;height:70%"/>
+<img src="https://github.com/pd3v/line/blob/develop/line0.1.png" style="width:30%;height:30%"/>
 
 ### Get *line* binaries
 
