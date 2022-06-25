@@ -21,8 +21,8 @@
 using namespace std;
 
 const float DEFAULT_BPM = 60.0;
-const string PROMPT = "line$ ";
-const string VERSION = "0.1";
+const string PROMPT = "line> ";
+const string VERSION = "0.1.1";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
