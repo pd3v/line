@@ -13,14 +13,17 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi)
 target_include_directories(
   ${PROJECT_NAME} 
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
+  PRIVATE /usr/local/Cellar/lua/5.4.3_1/include/
 )
 
 target_link_directories(
   ${PROJECT_NAME}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
+  PUBLIC /usr/local/Cellar/lua/5.4.3_1/lib/
 )
 
 target_link_libraries(
   ${PROJECT_NAME}
   LINK_PRIVATE rtmidi
+  LINK_PUBLIC lua
 )

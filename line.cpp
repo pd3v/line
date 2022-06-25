@@ -5,41 +5,103 @@
 //
 
 #include <iostream>
+#include <fstream>  
 #include <string>
 #include <chrono>
 #include <future>
 #include <mutex>
 #include <vector>
 #include <deque>
-#include <regex>
 #include <stdexcept>
 #include <sstream>
 #include <stdlib.h>
 #include <algorithm> 
 #include "externals/rtmidi/RtMidi.h"
+#if defined(LINK_PLATFORM_UNIX)
+#include <termios.h>
+#endif
+extern "C" {
+  #include "/usr/local/include/lua/lua.h"
+	#include "/usr/local/include/lua/lualib.h"
+	#include "/usr/local/include/lua/lauxlib.h"
+}
+
 
 using namespace std;
 
+using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
+
 const float DEFAULT_BPM = 60.0;
-const string PROMPT = "line> ";
+const string PROMPT = "line>";
 const string VERSION = "0.1.1";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
 
-void replaceRests(string& s) {
-  auto rests = true;
-  std::size_t p;
+long iterDur = 5; // milliseconds
 
-  while(rests) {
-    p = s.find(REST_SYMBOL);
-    if (p != std::string::npos) {
-      s.erase(p,1);
-      s.insert(p,to_string(REST_VAL));
-    } else 
-        rests = false;
+class Parser {
+  std::string restSymbol = {REST_SYMBOL};
+  lua_State *L = luaL_newstate();
+  std::string parserCode;
+
+public:
+  Parser()  {
+    luaL_openlibs(L);
+    const std::string parserFile = "../lineparser.lua";
+    std::ostringstream textBuffer;
+    std::ifstream input (parserFile.c_str());
+    textBuffer << input.rdbuf();
+    parserCode = textBuffer.str();
   }
-}
+  ~Parser() {lua_close(L);};
+
+  phraseT parsing(std::string _phrase) {
+    phraseT v{};
+    std::vector<std::vector<uint8_t>> subv{};
+    std::vector<uint8_t> subsubv{};
+
+    auto p = parserCode + " t = lpeg.match(linePhrase, \"" + _phrase + "\")";
+
+    if (luaL_dostring(L, p.c_str()) == LUA_OK) {
+      lua_getglobal(L, "t");
+      
+      // 3D Lua table to c++ vector
+      if (lua_istable(L,-1)) {
+        lua_pushnil(L);
+        lua_gettable(L,-2);
+        size_t table = lua_rawlen(L,-2);
+        size_t subtable,subsubtable;
+
+        for (int i=0; i<table; ++i) {
+          lua_next(L,-2);      
+          lua_pushnil(L);
+          subtable = lua_rawlen(L,-2);
+
+          for (int j=0; j<subtable; ++j) {
+            lua_next(L,-2);      
+            lua_pushnil(L);
+            subsubtable = lua_rawlen(L,-2);  
+
+            for (int k=0; k<subsubtable; ++k) {
+              lua_next(L,-2);
+              subsubv.push_back(static_cast<uint8_t>(lua_tonumber(L,-1)));
+              lua_pop(L,1);
+            }
+            subv.push_back(subsubv);
+            subsubv.clear();
+            lua_pop(L,2);
+          }
+          v.push_back(subv);
+          subv.clear();
+
+          lua_pop(L,2);
+        }
+      }
+    }
+    return v;
+  }
+};
 
 const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
   return DEFAULT_BPM/bpm*barDur;
@@ -49,7 +111,7 @@ void displayOptionsMenu(string menuVers="") {
   cout << "----------------------" << endl;
   cout << "  line " << VERSION << " midi seq  " << endl;
   cout << "----------------------" << endl;
-  cout << "..<[n] >    pattern   " << endl;
+  cout << "..<[n] >    phrase   " << endl;
   cout << "..b<[n]>    bpm       " << endl;
   cout << "..ch<[n]>   midi ch   " << endl;
   cout << "..m         this menu " << endl;
@@ -89,44 +151,59 @@ void unmute() {
   muted = false;
 }
 
-vector<vector<uint16_t>> reverse(vector<vector<uint16_t>> _pattern) {
-  for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {std::reverse(_subPattern.begin(),_subPattern.end());});
-  std::reverse(_pattern.begin(),_pattern.end());
-
-  return _pattern;
-}
-
-vector<vector<uint16_t>> scramble(vector<vector<uint16_t>> _pattern) {
-  for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {std::random_shuffle(_subPattern.begin(),_subPattern.end());});
-  std::random_shuffle(_pattern.begin(),_pattern.end());
-
-  return _pattern;
-}
-
-vector<vector<uint16_t>> xscramble(vector<vector<uint16_t>> _pattern) {
-  vector<uint16_t> pattValues {};
-
-  for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {
-    for_each(_subPattern.begin(),_subPattern.end(),[&](auto& _v) {
-      pattValues.emplace_back(_v);
+phraseT reverse(phraseT _phrase) {
+  for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
+    std::reverse(_subPhrase.begin(),_subPhrase.end());
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      std::reverse(_subsubPhrase.begin(),_subsubPhrase.end());
     });
   });
+
+  std::reverse(_phrase.begin(),_phrase.end());
+
+  return _phrase;
+}
+
+phraseT scramble(phraseT _phrase) {
+  for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
+    std::random_shuffle(_subPhrase.begin(),_subPhrase.end());
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      std::random_shuffle(_subsubPhrase.begin(),_subsubPhrase.end());
+    });
+  });
+
+  std::random_shuffle(_phrase.begin(),_phrase.end());
+
+  return _phrase;
+}
+
+phraseT xscramble(phraseT _phrase) {
+  std::vector<uint8_t> pattValues {};
+
+  for (auto& _subPhrase : _phrase)
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _v) {
+        pattValues.emplace_back(_v);
+      });
+    });
 
   std::random_shuffle(pattValues.begin(),pattValues.end());
   
-  for_each(_pattern.begin(),_pattern.end(),[&](auto& _subPattern) {
-    for_each(_subPattern.begin(),_subPattern.end(),[&](auto& _v) {
-      _v = pattValues.back();
-      pattValues.pop_back();
+  for (auto& _subPhrase : _phrase)
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _v) {
+        _v = pattValues.back();
+        pattValues.pop_back();
+      });
     });
-  });
-  
-  std::random_shuffle(_pattern.begin(),_pattern.end());
+    
+  std::random_shuffle(_phrase.begin(),_phrase.end());
 
-  return _pattern;
+  return _phrase;
 }
 
 int main() {
+  Parser parser;
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
 
@@ -134,23 +211,20 @@ int main() {
   long barDur = bpm(DEFAULT_BPM,refBarDur);
   
   vector<uint8_t> noteMessage;
-  vector<vector<uint16_t>> pattern{};
+  phraseT phrase{};
   uint8_t ch = 0;
   uint8_t ccCh = 0;
   bool rNotes = true;
   bool sync = false;
-  deque<vector<vector<uint16_t>>> last3Patterns{};
+  deque<phraseT> last3Phrases{};
+
   string opt;
   
-  mutex mtxWait, mtxPattern;
+  mutex mtxWait, mtxPhrase;
   condition_variable cv;
-  
-  smatch matchExp;
-  regex regExp(R"([a-zA-Z!\"#$%&\\/()=?±§*+´`|\\^~<>;,:-_]|[.]{2,})");
-  
+    
   bool soundingThread = false;
   bool exit = false;
-  bool syntaxError = false;
     
   noteMessage.push_back(0);
   noteMessage.push_back(0);
@@ -158,51 +232,69 @@ int main() {
   
   auto fut = async(launch::async, [&](){
     unsigned long partial = 0;
-    vector<vector<uint16_t>> _patt{};
+    phraseT _phrase{};
     uint8_t _ch = 0;
     uint8_t _ccCh = 0;
     bool _rNotes = true;
-    // bool sync = false;
     
-    // waiting for live coder's first pattern 
+    // waiting for live coder's first phrase 
     unique_lock<mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
-    lock_guard<mutex> lckPattern(mtxPattern);
+    lock_guard<mutex> lckPhrase(mtxPhrase);
     
     while (soundingThread) {
-      if (!pattern.empty()) {
-        partial = barDur/pattern.size();
-        _patt = pattern;
+      if (!phrase.empty()) {
+        partial = barDur/phrase.size();
+        _phrase = phrase;
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
-        // _sync = sync;
+        
+        if (_rNotes) {
+            for (auto& _subPhrase : _phrase) {
+              for (auto& _subsubPhrase : _subPhrase) {
+                for (auto& notes : _subsubPhrase) {
+                  noteMessage[0] = 144+_ch;
+                  noteMessage[1] = notes;
+                  noteMessage[2] = ((notes == REST_VAL) || muted) ? 0 : amplitude;
+                  midiOut.sendMessage(&noteMessage);
+                }
 
-        if (_rNotes)
-          for (auto& subPattern : _patt) {
-            for (auto& n : subPattern) {
-              noteMessage[0] = 144+_ch;
-              noteMessage[1] = n;
-              noteMessage[2] = ((n == REST_VAL) || muted) ? 0 : amplitude;
-              midiOut.sendMessage(&noteMessage);
-              
-              std::this_thread::sleep_for(chrono::milliseconds(partial/subPattern.size()));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/_subPhrase.size())-iterDur)));
 
-              noteMessage[0] = 128+_ch;
-              noteMessage[1] = n;
-              noteMessage[2] = 0;
-              midiOut.sendMessage(&noteMessage);
+                for (auto& notes : _subsubPhrase) {  
+                  noteMessage[0] = 128+_ch;
+                  noteMessage[1] = notes;
+                  noteMessage[2] = 0;
+                  midiOut.sendMessage(&noteMessage);
+                }
+              }
             }
-          }
-        else
-          for (auto& subPattern : _patt) {
-            for (auto& n : subPattern) {
-              noteMessage[0] = 176+_ch;
-              noteMessage[1] = _ccCh;
-              noteMessage[2] = n;
-              midiOut.sendMessage(&noteMessage);
+        } else
+          if (sync)  {
+            for (auto& subPhrase : _phrase) {
+              for (auto& subsubPhrase : subPhrase) {
+                for (auto& ccValues : subsubPhrase) {
+                noteMessage[0] = 176+_ch;
+                noteMessage[1] = _ccCh;
+                noteMessage[2] = ccValues;
+                midiOut.sendMessage(&noteMessage);
+                }
               
-              std::this_thread::sleep_for(chrono::milliseconds(sync ? partial/subPattern.size() : OFF_SYNC_DUR));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
+              }
+            }
+          } else {
+            for (auto& subPhrase : _phrase) {
+              for (auto& subsubPhrase : subPhrase) {
+                for (auto& ccValues : subsubPhrase) {
+                noteMessage[0] = 176+_ch;
+                noteMessage[1] = _ccCh;
+                noteMessage[2] = ccValues;
+                midiOut.sendMessage(&noteMessage);
+              }
+                std::this_thread::sleep_for(std::chrono::milliseconds(OFF_SYNC_DUR));
+              }
             }
           }
       } else break;
@@ -226,28 +318,28 @@ int main() {
             ch = std::abs(std::stoi(opt.substr(2,opt.size()-1))-1);
           }
           catch (...) {
-            cerr << "Invalid channel value." << endl; 
+            cerr << "Invalid channel." << endl; 
           }
       } else if (opt == "n") {
           rNotes = true;
-          pattern.clear();
-          pattern.push_back({REST_VAL});
+          phrase.clear();
+          phrase.push_back({{REST_VAL}});
       } else if (opt.substr(0,2) == "cc") {
           try {
             ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
             rNotes = false;
           }
           catch (...) {
-            cerr << "Invalid cc channel value." << endl; 
+            cerr << "Invalid cc channel." << endl; 
           }
       } else if (opt.at(0) == 'b') {
           try {
             barDur = bpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))),refBarDur);
           } catch (...) {
-            cerr << "Invalid bpm value." << endl;
+            cerr << "Invalid bpm." << endl;
           }
       } else if (opt == "e") {
-          pattern.clear();
+          phrase.clear();
           soundingThread = true;
           cv.notify_one();
           std::cout << fut.get();
@@ -263,76 +355,35 @@ int main() {
       } else if (opt == "u") {
           unmute();
       } else if (opt == "r") {    
-          pattern = reverse(pattern);
+          phrase = reverse(phrase);
       } else if (opt == "s") {    
-          pattern = scramble(pattern);
+          phrase = scramble(phrase);
       } else if (opt == "x") {    
-          pattern = xscramble(pattern);
+          phrase = xscramble(phrase);
       } else if (opt == "l" || opt == "l1") {    
-          pattern = last3Patterns.front();
+          phrase = last3Phrases.front();
       } else if (opt == "l2") {    
-          pattern = last3Patterns.at(1);
+          phrase = last3Phrases.at(1);
       } else if (opt == "l3") {    
-          pattern = last3Patterns.at(2);
+          phrase = last3Phrases.at(2);
       } else if (opt == "i") {    
           sync= true;
       } else if (opt == "o") {    
           sync= false;
       } else {
-        // parser
-        regex_search(opt, matchExp, regExp);
-        sregex_iterator pos(opt.cbegin(), opt.cend(), regExp);
-        sregex_iterator end;
-        
-        if (pos == end) {
-          vector<vector<uint16_t>> tempPattern{};
-          replaceRests(opt);
-          istringstream iss(opt);
-          bool subBarFlag = false;
-          vector<uint16_t> subPatt{};
-  
-          vector<string> results((istream_iterator<string>(iss)), istream_iterator<string>());
-        
-          for_each(results.begin(),results.end(),[&](string i) {
-              string s;
+        // parsing
+        phraseT tempPhrase{};
+        tempPhrase = parser.parsing(opt);
 
-              try {
-                if (i.substr(0,1) == ".") {
-                  s = i.substr(1,i.back());
-                  subPatt.push_back(static_cast<uint16_t>(stoi(s)));
-                  subBarFlag = true;
-                } else if (i.substr(i.length()-1,i.length()) == ".") {
-                  s = i.substr(0,i.length()-1);
-                  subPatt.push_back(static_cast<uint16_t>(stoi(s)));
-                  tempPattern.push_back(subPatt);
-                  subPatt.clear();
-                  subBarFlag = false;
-                } else {
-                  if (subBarFlag == true)
-                    subPatt.push_back(stoi(i));
-                  else if (subBarFlag == false)
-                    tempPattern.push_back({static_cast<uint16_t>(stoi(i))});
-                }
-              } catch(...) { 
-                syntaxError = true;
-              }
-            }
-          );
-          
-          if (syntaxError) {
-            tempPattern.clear();
-            syntaxError = false;
-          } 
-          
-          if (!tempPattern.empty()) {
-            pattern = tempPattern;
-            
-            soundingThread = true;
-            cv.notify_one();
+        if (!tempPhrase.at(0).empty()) {
+          phrase = tempPhrase;
+          tempPhrase.clear();
 
-            last3Patterns.push_front(pattern);
-            if (last3Patterns.size() > 3) last3Patterns.pop_back();
-          }
+          soundingThread = true;
+          cv.notify_one();
+
+          last3Phrases.push_front(phrase);
+          if (last3Phrases.size() > 3) last3Phrases.pop_back();
         }
       }
     }
