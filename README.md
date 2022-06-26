@@ -33,17 +33,21 @@ With `line` running, type:
 
 **To send a MIDI message:**
 
-// 4 1/4 midi notes
+4 1/4 midi notes
 
 `45 46 47 48`
 
-// 1/4 1/8 1/8 1/4 1/4 notes
+1/4 1/8 1/8 1/4 1/4 notes
 
 `45 .34 35. 48 49` 
 
-// '-' for a silent note
+'-' for a silent note
 
 `36 .37 38. 41 .- 46.` 
+
+C Major chord + C Major arpeggio. All 1/4
+
+`(c3 e3 g3) g5 e6 c2`
 
 **To set a MIDI channel:**  
 
@@ -73,13 +77,13 @@ amplitude 0.5
 
 **To scramble:**  
 
-// scrambles notes within each rhythmic part and rhythmic struct
+scrambles notes within each rhythmic part and rhythmic structer
 
 `s`
 
 **To extra scramble:**  
 
-// scrambles notes across the pattern and rhythmic struct
+scrambles notes across the pattern and rhythmic structer
 
 `x`
 
@@ -93,27 +97,27 @@ amplitude 0.5
 
 **To swith between notes and cc modes:**  
 
-// notes mode
+notes mode
 
 `n` 
 
-// cc mode, e.g. cc11
+cc mode, e.g. cc11
 
 `cc11`
 
 **To set cc sync lock/unlock:**  
 
-// lock or unlock
+sync or unsync
 
 `i` or `o`
 
 **To exit:**
 
-`e`  
+`ex`  
 
 **To display commands menu/extended menu:**
 
-`m` or `d`
+`m` or `me`
 
 
  
