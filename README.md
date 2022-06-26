@@ -77,13 +77,13 @@ amplitude 0.5
 
 **To scramble:**  
 
-scrambles notes within each rhythmic part and rhythmic structer
+scrambles notes within each rhythmic part and rhythmic structure
 
 `s`
 
 **To extra scramble:**  
 
-scrambles notes across the pattern and rhythmic structer
+scrambles notes across the pattern and rhythmic structure
 
 `x`
 
