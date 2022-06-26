@@ -115,15 +115,15 @@ void displayOptionsMenu(string menuVers="") {
   cout << "..b<[n]>    bpm       " << endl;
   cout << "..ch<[n]>   midi ch   " << endl;
   cout << "..m         this menu " << endl;
-  cout << "..d         extnd menu" << endl;
-  cout << "..e         exit      " << endl;
+  cout << "..me        extnd menu" << endl;
+  cout << "..ex        exit      " << endl;
   cout << "..a<[n]>    amplitude " << endl;
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
   cout << "..l<[n]>    last patt " << endl;
   
-  if (menuVers == "d") {
+  if (menuVers == "me") {
     cout << "..cc<[n]>   cc ch mode" << endl;
     cout << "..n         notes mode" << endl;
     cout << "..t         mute      " << endl;
@@ -311,7 +311,7 @@ int main() {
     if (!opt.empty()) {
       if (opt == "m") {
         displayOptionsMenu("");
-      } else if (opt == "d") {
+      } else if (opt == "me") {
         displayOptionsMenu(opt);
       } else if (opt.substr(0,2) == "ch") {
           try {
@@ -338,7 +338,7 @@ int main() {
           } catch (...) {
             cerr << "Invalid bpm." << endl;
           }
-      } else if (opt == "e") {
+      } else if (opt == "ex") {
           phrase.clear();
           soundingThread = true;
           cv.notify_one();
