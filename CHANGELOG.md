@@ -1,6 +1,7 @@
 ## 0.2
 
 . Play chords - polyphony
+
 . Notes cipher
 
 ____
