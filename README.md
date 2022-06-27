@@ -35,11 +35,11 @@ With `line` running, type:
 
 4 1/4 midi notes
 
-`45 46 47 48`
+`45 46 47 48` or `a3 as3 b3 c4`
 
 1/4 1/8 1/8 1/4 1/4 notes
 
-`45 .34 35. 48 49` 
+`45 .34 35. 48 49` or `a3 .as2 b2. c4 cs4`
 
 '-' for a silent note
 
