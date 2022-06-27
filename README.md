@@ -65,7 +65,7 @@ channel 2
 
 amplitude 0.5
 
-`a0.5`
+`am0.5` or `am.5`
 
 **To mute and umute:**
 
@@ -117,7 +117,7 @@ sync or unsync
 
 **To display commands menu/extended menu:**
 
-`m` or `me`
+`ms` or `me`
 
 
  
