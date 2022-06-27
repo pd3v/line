@@ -111,13 +111,13 @@ void displayOptionsMenu(string menuVers="") {
   cout << "----------------------" << endl;
   cout << "  line " << VERSION << " midi seq  " << endl;
   cout << "----------------------" << endl;
-  cout << "..<[n] >    phrase   " << endl;
+  cout << "..<[n] >    phrase    " << endl;
   cout << "..b<[n]>    bpm       " << endl;
   cout << "..ch<[n]>   midi ch   " << endl;
-  cout << "..m         this menu " << endl;
+  cout << "..ms        this menu " << endl;
   cout << "..me        extnd menu" << endl;
   cout << "..ex        exit      " << endl;
-  cout << "..am<[n]>    amplitude " << endl;
+  cout << "..am<[n]>   amplitude " << endl;
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
@@ -126,8 +126,8 @@ void displayOptionsMenu(string menuVers="") {
   if (menuVers == "me") {
     cout << "..cc<[n]>   cc ch mode" << endl;
     cout << "..n         notes mode" << endl;
-    cout << "..t         mute      " << endl;
-    cout << "..u         unmute    " << endl;
+    cout << "..m         mute      " << endl;
+    cout << "..um        unmute    " << endl;
     cout << "..i         sync cc   " << endl;
     cout << "..o         async cc  " << endl;
   }
@@ -309,7 +309,7 @@ int main() {
     getline(cin, opt);
     
     if (!opt.empty()) {
-      if (opt == "m") {
+      if (opt == "ms") {
         displayOptionsMenu("");
       } else if (opt == "me") {
         displayOptionsMenu(opt);
@@ -344,15 +344,15 @@ int main() {
           cv.notify_one();
           std::cout << fut.get();
           exit = true;
-      } else if (opt.at(0) == 'am') {
+      } else if (opt.substr(0,2) == "am") {
           try {
-            amp(std::stof(opt.substr(1,opt.size()-1)));
+            amp(std::stof(opt.substr(2,opt.size()-1)));
           } catch (...) {
             cerr << "Invalid amplitude." << endl; 
           }
-      } else if (opt == "t") {
+      } else if (opt == "m") {
           mute();
-      } else if (opt == "u") {
+      } else if (opt == "um") {
           unmute();
       } else if (opt == "r") {    
           phrase = reverse(phrase);
