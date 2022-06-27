@@ -26,14 +26,11 @@ extern "C" {
 	#include "/usr/local/include/lua/lauxlib.h"
 }
 
-
-using namespace std;
-
 using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
 
 const float DEFAULT_BPM = 60.0;
-const string PROMPT = "line>";
-const string VERSION = "0.2";
+const std::string PROMPT = "line>";
+const std::string VERSION = "0.2";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
@@ -107,7 +104,8 @@ const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
   return DEFAULT_BPM/bpm*barDur;
 }
 
-void displayOptionsMenu(string menuVers="") {
+void displayOptionsMenu(std::string menuVers="") {
+  using namespace std;
   cout << "----------------------" << endl;
   cout << "  line " << VERSION << " midi seq  " << endl;
   cout << "----------------------" << endl;
@@ -210,18 +208,18 @@ int main() {
   const uint16_t refBarDur = 4000; // milliseconds
   long barDur = bpm(DEFAULT_BPM,refBarDur);
   
-  vector<uint8_t> noteMessage;
+  std::vector<uint8_t> noteMessage;
   phraseT phrase{};
   uint8_t ch = 0;
   uint8_t ccCh = 0;
   bool rNotes = true;
   bool sync = false;
-  deque<phraseT> last3Phrases{};
+  std::deque<phraseT> last3Phrases{};
 
-  string opt;
+  std::string opt;
   
-  mutex mtxWait, mtxPhrase;
-  condition_variable cv;
+  std::mutex mtxWait, mtxPhrase;
+  std::condition_variable cv;
     
   bool soundingThread = false;
   bool exit = false;
@@ -230,7 +228,7 @@ int main() {
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   
-  auto fut = async(launch::async, [&](){
+  auto fut = async(std::launch::async, [&](){
     unsigned long partial = 0;
     phraseT _phrase{};
     uint8_t _ch = 0;
@@ -238,9 +236,9 @@ int main() {
     bool _rNotes = true;
     
     // waiting for live coder's first phrase 
-    unique_lock<mutex> lckWait(mtxWait);
+    std::unique_lock<std::mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
-    lock_guard<mutex> lckPhrase(mtxPhrase);
+    std::lock_guard<std::mutex> lckPhrase(mtxPhrase);
     
     while (soundingThread) {
       if (!phrase.empty()) {
@@ -306,7 +304,7 @@ int main() {
   
   while (!exit) {
     std::cout << PROMPT;
-    getline(cin, opt);
+    getline(std::cin, opt);
     
     if (!opt.empty()) {
       if (opt == "ms") {
@@ -318,7 +316,7 @@ int main() {
             ch = std::abs(std::stoi(opt.substr(2,opt.size()-1))-1);
           }
           catch (...) {
-            cerr << "Invalid channel." << endl; 
+            std::cerr << "Invalid channel." << std::endl; 
           }
       } else if (opt == "n") {
           rNotes = true;
@@ -330,13 +328,13 @@ int main() {
             rNotes = false;
           }
           catch (...) {
-            cerr << "Invalid cc channel." << endl; 
+            std::cerr << "Invalid cc channel." << std::endl; 
           }
       } else if (opt.at(0) == 'b') {
           try {
             barDur = bpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))),refBarDur);
           } catch (...) {
-            cerr << "Invalid bpm." << endl;
+            std::cerr << "Invalid bpm." << std::endl;
           }
       } else if (opt == "ex") {
           phrase.clear();
@@ -348,7 +346,7 @@ int main() {
           try {
             amp(std::stof(opt.substr(2,opt.size()-1)));
           } catch (...) {
-            cerr << "Invalid amplitude." << endl; 
+            std::cerr << "Invalid amplitude." << std::endl; 
           }
       } else if (opt == "m") {
           mute();
