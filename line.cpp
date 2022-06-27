@@ -117,7 +117,7 @@ void displayOptionsMenu(string menuVers="") {
   cout << "..m         this menu " << endl;
   cout << "..me        extnd menu" << endl;
   cout << "..ex        exit      " << endl;
-  cout << "..a<[n]>    amplitude " << endl;
+  cout << "..am<[n]>    amplitude " << endl;
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
@@ -344,7 +344,7 @@ int main() {
           cv.notify_one();
           std::cout << fut.get();
           exit = true;
-      } else if (opt.at(0) == 'a') {
+      } else if (opt.at(0) == 'am') {
           try {
             amp(std::stof(opt.substr(1,opt.size()-1)));
           } catch (...) {
