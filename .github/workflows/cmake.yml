@@ -28,7 +28,7 @@ jobs:
     - name: Publish macOS Artifact
       uses: actions/upload-artifact@v2
       with:
-        name: line macOS release v0.1
+        name: line macOS release v0.2
         path: release
     # runs-on: ubuntu-latest
     # steps:
