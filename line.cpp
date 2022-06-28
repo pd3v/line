@@ -358,24 +358,16 @@ int main() {
           phrase = scramble(phrase);
       } else if (opt == "x") {    
           phrase = xscramble(phrase);
-      } else if (opt == "l" || opt == "l1") {
-          try {		
-            phrase = last3Phrases.at(0);
-          } catch (...) {
-            std::cerr << "Invalid phrase reference." << std::endl; 
-          }
+      } else if (opt == "l" || opt == "l1") { 
+          if (!last3Phrases.empty()) phrase = last3Phrases.at(0); 
+          else std::cout << "Invalid phrase reference." << std::endl; 
       } else if (opt == "l2") {    
-          try {		
-            phrase = last3Phrases.at(1);
-          } catch (...) {
-            std::cerr << "Invalid phrase reference." << std::endl; 
-          }
+          if (last3Phrases.size() >= 2) phrase = last3Phrases.at(1);
+          else std::cout << "Invalid phrase reference." << std::endl; 
+
       } else if (opt == "l3") {    
-          try {		
-            phrase = last3Phrases.at(2);;
-          } catch (...) {
-            std::cerr << "Invalid phrase reference." << std::endl; 
-          }
+          if (last3Phrases.size() == 3) phrase = last3Phrases.at(2);
+          else std::cout << "Invalid phrase reference." << std::endl; 
       } else if (opt == "i") {    
           sync= true;
       } else if (opt == "o") {    
