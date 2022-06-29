@@ -21,16 +21,16 @@
 #include <termios.h>
 #endif
 extern "C" {
-  #include "/usr/local/include/lua/lua.h"
-	#include "/usr/local/include/lua/lualib.h"
-	#include "/usr/local/include/lua/lauxlib.h"
+  #include "externals/lua/lua.h"
+	#include "externals/lua/lualib.h"
+	#include "externals/lua/lauxlib.h"
 }
 
 using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
 
 const float DEFAULT_BPM = 60.0;
 const std::string PROMPT = "line>";
-const std::string VERSION = "0.2";
+const std::string VERSION = "0.2.2";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
@@ -110,7 +110,7 @@ void displayOptionsMenu(std::string menuVers="") {
   cout << "  line " << VERSION << " midi seq  " << endl;
   cout << "----------------------" << endl;
   cout << "..<[n] >    phrase    " << endl;
-  cout << "..b<[n]>    bpm       " << endl;
+  cout << "..bpm<[n]>  bpm       " << endl;
   cout << "..ch<[n]>   midi ch   " << endl;
   cout << "..ms        this menu " << endl;
   cout << "..me        extnd menu" << endl;
@@ -330,9 +330,9 @@ int main() {
           catch (...) {
             std::cerr << "Invalid cc channel." << std::endl; 
           }
-      } else if (opt.at(0) == 'b') {
+      } else if (opt.substr(0,3) == "bpm") {
           try {
-            barDur = bpm(std::abs(std::stoi(opt.substr(1,opt.size()-1))),refBarDur);
+            barDur = bpm(std::abs(std::stoi(opt.substr(3,opt.size()-1))),refBarDur);
           } catch (...) {
             std::cerr << "Invalid bpm." << std::endl;
           }
