@@ -59,7 +59,7 @@ channel 2
 
 120 bpm
 
-`b120`
+`bpm120`
 
 **To set amplitude:**
 
