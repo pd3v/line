@@ -1,3 +1,6 @@
 [submodule "externals/rtmidi"]
 	path = externals/rtmidi
 	url = https://github.com/thestk/rtmidi.git
+[submodule "externals/lua"]
+	path = externals/lua
+	url = https://github.com/lua/lua.git
