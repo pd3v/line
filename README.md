@@ -95,7 +95,7 @@ scrambles notes across the pattern and rhythmic structure
 
 `l3`
 
-**To swith between notes and cc modes:**  
+**To switch between notes and cc modes:**  
 
 notes mode
 
