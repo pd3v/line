@@ -30,7 +30,7 @@ using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
 
 const float DEFAULT_BPM = 60.0;
 const std::string PROMPT = "line>";
-const std::string VERSION = "0.2.2";
+const std::string VERSION = "0.2.3";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
@@ -364,7 +364,6 @@ int main() {
       } else if (opt == "l2") {    
           if (last3Phrases.size() >= 2) phrase = last3Phrases.at(1);
           else std::cout << "Invalid phrase reference." << std::endl; 
-
       } else if (opt == "l3") {    
           if (last3Phrases.size() == 3) phrase = last3Phrases.at(2);
           else std::cout << "Invalid phrase reference." << std::endl; 
