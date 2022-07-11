@@ -54,9 +54,9 @@ local chordP = lpeg.Cg(("(" * ((note + cipher_bs_oct + rest)^1 * (sep^1 * (note 
 local subP = lpeg.Cg(("." * ((note + cipher_bs_oct + rest)^1 * (sep^1 * (note + cipher_bs_oct + rest))^0)^1 * ".")) / addToNoteTable
 
 local V = lpeg.V
-local linePhrase = lpeg.P {"phrase",
+local phraseG = lpeg.P {"phrase",
   phrase = lpeg.Ct(lpeg.Cg(((V"note" + V"chord" + V"sub")^1 * (sep^1 * (V"note" + V"chord" + V"sub"))^0)^1));
   chord = chordP;
   sub = subP;
   note = noteP;
-}
+} * -1
