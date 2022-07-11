@@ -58,7 +58,7 @@ public:
     std::vector<std::vector<uint8_t>> subv{};
     std::vector<uint8_t> subsubv{};
 
-    auto p = parserCode + " t = lpeg.match(linePhrase, \"" + _phrase + "\")";
+    auto p = parserCode + " t = lpeg.match(phraseG, \"" + _phrase + "\")";
 
     if (luaL_dostring(L, p.c_str()) == LUA_OK) {
       lua_getglobal(L, "t");
@@ -372,11 +372,11 @@ int main() {
       } else if (opt == "o") {    
           sync= false;
       } else {
-        // parsing
+        // it's a phrase, if it's not a command
         phraseT tempPhrase{};
         tempPhrase = parser.parsing(opt);
-
-        if (!tempPhrase.at(0).empty()) {
+    
+        if (!tempPhrase.empty()) {
           phrase = tempPhrase;
           tempPhrase.clear();
 
