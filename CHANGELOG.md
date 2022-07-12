@@ -1,4 +1,4 @@
-## 0.2
+## 0.2.4
 
 . Play chords - polyphony
 
