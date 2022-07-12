@@ -16,6 +16,8 @@
 #include <sstream>
 #include <stdlib.h>
 #include <algorithm> 
+#include <readline/readline.h>
+#include <readline/history.h>
 #include "externals/rtmidi/RtMidi.h"
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
@@ -29,8 +31,8 @@ extern "C" {
 using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
 
 const float DEFAULT_BPM = 60.0;
-const std::string PROMPT = "line>";
-const std::string VERSION = "0.2.4";
+const char *PROMPT = "line>";
+const std::string VERSION = "0.3";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
@@ -303,9 +305,8 @@ int main() {
   displayOptionsMenu("");
   
   while (!exit) {
-    std::cout << PROMPT;
-    getline(std::cin, opt);
-    
+    opt = readline(PROMPT);
+
     if (!opt.empty()) {
       if (opt == "ms") {
         displayOptionsMenu("");
@@ -378,6 +379,8 @@ int main() {
     
         if (!tempPhrase.empty()) {
           phrase = tempPhrase;
+
+          add_history(opt.c_str());
           tempPhrase.clear();
 
           soundingThread = true;
