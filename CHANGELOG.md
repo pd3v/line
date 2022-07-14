@@ -1,3 +1,12 @@
+## 0.3
+
+. Left and right arrow keys enable in-line phrase editing 
+
+. Up and down arrow keys for back and forth phrase history
+
+____
+
+
 ## 0.2.4
 
 . Play chords - polyphony
