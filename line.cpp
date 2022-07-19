@@ -32,7 +32,7 @@ using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
 
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
-const std::string VERSION = "0.3";
+const std::string VERSION = "0.3.1";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
@@ -130,6 +130,7 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..um        unmute    " << endl;
     cout << "..i         sync cc   " << endl;
     cout << "..o         async cc  " << endl;
+    cout << "..lb        label     " << endl;
   }
   cout << "----------------------" << endl;
   
@@ -201,6 +202,8 @@ phraseT xscramble(phraseT _phrase) {
 
   return _phrase;
 }
+
+std::string prompt = PROMPT;
 
 int main() {
   Parser parser;
@@ -305,7 +308,7 @@ int main() {
   displayOptionsMenu("");
   
   while (!exit) {
-    opt = readline(PROMPT);
+    opt = readline(prompt.c_str());
 
     if (!opt.empty()) {
       if (opt == "ms") {
@@ -372,6 +375,9 @@ int main() {
           sync= true;
       } else if (opt == "o") {    
           sync= false;
+      } else if (opt.length() > 2 && opt.substr(0,2) == "lb") {    
+          std::string _prompt =  PROMPT;
+          prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
       } else {
         // it's a phrase, if it's not a command
         phraseT tempPhrase{};
