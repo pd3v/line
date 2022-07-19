@@ -67,7 +67,7 @@ amplitude 0.5
 
 `am0.5` or `am.5`
 
-**To mute and umute:**
+**To mute and unmute:**
 
 `m` and `um`
 
@@ -101,15 +101,21 @@ notes mode
 
 `n` 
 
-cc mode, e.g. cc11
+cc mode
 
-`cc11`
+`cc2`
 
 **To set cc sync lock/unlock:**  
 
 sync or unsync
 
 `i` or `o`
+
+**To rename prompt:** 
+
+from default line> to line~my_synth>
+
+`lb~my_synth`
 
 **To exit:**
 

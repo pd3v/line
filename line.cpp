@@ -130,7 +130,7 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..um        unmute    " << endl;
     cout << "..i         sync cc   " << endl;
     cout << "..o         async cc  " << endl;
-    cout << "..lb        label     " << endl;
+    cout << "..lb<[a|n]> label     " << endl;
   }
   cout << "----------------------" << endl;
   
