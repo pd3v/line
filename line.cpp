@@ -375,9 +375,14 @@ int main() {
           sync= true;
       } else if (opt == "o") {    
           sync= false;
-      } else if (opt.length() > 2 && opt.substr(0,2) == "lb") {    
-          std::string _prompt =  PROMPT;
-          prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
+      } else if (opt.substr(0,2) == "lb") {    
+          // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
+          prompt = PROMPT;
+
+          if (opt.length() > 2) {
+            std::string _prompt =  PROMPT;
+            prompt = "~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
+          }
       } else {
         // it's a phrase, if it's not a command
         phraseT tempPhrase{};
