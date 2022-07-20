@@ -113,9 +113,9 @@ sync or unsync
 
 **To rename prompt:** 
 
-from default line> to line~my_synth>
+from default line> to line~my_synth>, type:
 
-`lb~my_synth`
+`lbmy_synth`
 
 **To exit:**
 
