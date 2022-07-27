@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19.2)
 
 set (CMAKE_CXX_STANDARD 17)
 
-project(line)
+project(line VERSION 0.3.3)
 
 set(LIBRARY_OUTPUT_NAME ${PROJECT_NAME})
 
@@ -13,7 +13,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi)
 target_link_libraries(
   ${PROJECT_NAME}
   LINK_PRIVATE rtmidi
-  LINK_PRIVATE lua
-  LINK_PRIVATE lpeg
+  LINK_PUBLIC lua
   LINK_PRIVATE readline
 )
