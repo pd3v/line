@@ -14,7 +14,7 @@
 
 ### To build and run *line* 
 
-####Install depencies first with *macports*
+#### Install depencies first with *macports*
 
 In command-line, type and Enter:
  
@@ -24,7 +24,7 @@ In command-line, type and Enter:
 
 (alternatives for installation, *Luarocks* package manager or *Homebrew*)
 
-####Install and run `line`
+#### Install and run `line`
 
 (CMake is necessary)
 
