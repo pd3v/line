@@ -10,23 +10,10 @@ add_executable("${PROJECT_NAME}" line.cpp)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi)
 
-target_include_directories(
-  ${PROJECT_NAME} 
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/lua/
-  PRIVATE /usr/include/readline/
-)
-
-target_link_directories(
-  ${PROJECT_NAME}
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/lua
-  PRIVATE /usr/lib/
-)
-
 target_link_libraries(
   ${PROJECT_NAME}
   LINK_PRIVATE rtmidi
-  LINK_PUBLIC lua
+  LINK_PRIVATE lua
+  LINK_PRIVATE lpeg
   LINK_PRIVATE readline
 )
