@@ -8,17 +8,29 @@
 <!-- ![line_screenshot](https://github.com/pd3v/line/blob/develop/line0.1.png) -->
 <img src="https://github.com/pd3v/line/blob/develop/line0.1.png" style="width:45%;height:45%"/>
 
-### Get *line* binaries
+<!-- ### Get *line* binaries -->
 
-[macos binaries](https://github.com/pd3v/line/actions/runs/1802392423)
+<!-- [macos binaries](https://github.com/pd3v/line/actions/runs/1802392423) -->
 
-### To build and run *line* 
+### To build and run `line`
+
+####Install depencies first with *macports*
+
+In command-line, type and Enter:
+ 
++ port search --name --glob 'lua' // lua @5.3.5
+
++ sudo port install lua @5.3.5
+
+(alternatives for installation, *Luarocks* package manager or *Homebrew*)
+
+####Install and run `line`
 
 (CMake is necessary)
 
-+ Go to `line`'s directory
-
 + In command-line, type and Enter:
+
++ Go to `line`'s directory
 
 + ./build.sh
 
