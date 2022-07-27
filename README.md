@@ -30,7 +30,7 @@ In command-line, type and Enter:
 
 + Go to `line`'s directory
 
-+ In command-line, type and Enter:
+In command-line, type and Enter:
 
 + ./build.sh
 
