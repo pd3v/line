@@ -12,7 +12,7 @@
 
 <!-- [macos binaries](https://github.com/pd3v/line/actions/runs/1802392423) -->
 
-### To build and run `line`
+### To build and run *line* 
 
 ####Install depencies first with *macports*
 
