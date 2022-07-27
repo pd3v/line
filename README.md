@@ -28,9 +28,9 @@ In command-line, type and Enter:
 
 (CMake is necessary)
 
-+ In command-line, type and Enter:
-
 + Go to `line`'s directory
+
++ In command-line, type and Enter:
 
 + ./build.sh
 
