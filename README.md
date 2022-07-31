@@ -14,21 +14,33 @@
 
 ### To build and run *line* 
 
-#### Install depencies first with *macports*
+#### Install lua lang (used for parsing) first
 
 In command-line, type and Enter:
+
+###### On MacOS with *macports*
  
-+ port search --name --glob 'lua' // lua @5.3.5
+`port search --name --glob 'lua' ` 
 
-+ sudo port install lua @5.3.5
+`sudo port install lua @5.3.5` // 5.3.5 or other version
 
-(alternatives for installation, *Luarocks* package manager or *Homebrew*)
+###### On Ubuntu/Debian*
 
-#### Install and run `line`
+`sudo apt install lua5.3` // 5.3 or other version
+
+###### On Windows* with *Chocolatey*
+
+`choco install lua`
+
+(an alternative for installation would be *Luarocks* package manager)
+
+\* Didn't tried it out
+
+#### Install and run *line*
 
 (CMake is necessary)
 
-+ Go to `line`'s directory
++ Go to *line*'s directory
 
 In command-line, type and Enter:
 
@@ -40,7 +52,7 @@ In command-line, type and Enter:
 
 ## Manual
 
-With `line` running, type:
+With *line* running, type:
 
 
 **To send a MIDI message:**
@@ -125,7 +137,7 @@ sync or unsync
 
 **To rename prompt:** 
 
-from default line> to line~my_synth>, type:
+from default **line>** to **~my_synth>**, type:
 
 `lbmy_synth`
 
