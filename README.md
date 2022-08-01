@@ -5,7 +5,6 @@
 
 + 1 instrument or 1 CC
 
-<!-- ![line_screenshot](https://github.com/pd3v/line/blob/develop/line0.1.png) -->
 <img src="https://github.com/pd3v/line/blob/develop/line0.1.png" style="width:45%;height:45%"/>
 
 <!-- ### Get *line* binaries -->
@@ -14,13 +13,19 @@
 
 ### To build and run *line* 
 
-#### Install lua lang (used for parsing) first
+#### Install lua language and lpeg (used for parsing) first
+
+##### MacOS, Linux or Windows 
+
+After installing *[luarocks](https://luarocks.org/#quick-start)* package manager
 
 In command-line, type and Enter:
 
-###### On MacOS with *macports*
+`luarocks install lpeg` 
+
+<!-- ###### On MacOS with *macports*
  
-`port search --name --glob 'lua' ` 
+ `port search --name --glob 'lua' ` 
 
 `sudo port install lua @5.3.5` // 5.3.5 or other version
 
@@ -34,9 +39,10 @@ In command-line, type and Enter:
 
 (an alternative for installation would be *Luarocks* package manager)
 
-\* Didn't tried it out
+\* Didn't tried it out -->
 
-#### Install and run *line*
+
+#### Build and run *line*
 
 (CMake is necessary)
 
@@ -44,9 +50,11 @@ In command-line, type and Enter:
 
 In command-line, type and Enter:
 
-+ ./build.sh
+`./build.sh`
 
-+ ./line
+`./line`
+
+(alternatives for installation would be *macports* or *homebrew* package managers)
 
 **Now run your favorite synth, sampler, DAW, or other MIDI receiver!**
 
