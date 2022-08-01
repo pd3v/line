@@ -54,7 +54,7 @@ In command-line, type and Enter:
 
 `./line`
 
-(alternatives for installation would be *macports* or *homebrew* package managers)
+(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)
 
 **Now run your favorite synth, sampler, DAW, or other MIDI receiver!**
 
