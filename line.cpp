@@ -32,7 +32,7 @@ using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
 
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
-const std::string VERSION = "0.3.3";
+const std::string _VERSION = "0.3.3";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
@@ -47,13 +47,32 @@ class Parser {
 public:
   Parser()  {
     luaL_openlibs(L);
-    const std::string parserFile = "../lineparser.lua";
+    // const std::string parserFile = "../lineparser.lua";
+    const std::string parserFile = "../lineparsertest.lua";
     std::ostringstream textBuffer;
     std::ifstream input (parserFile.c_str());
     textBuffer << input.rdbuf();
     parserCode = textBuffer.str();
   }
   ~Parser() {lua_close(L);};
+
+  // Testing if complided and linked lua vm is running
+  phraseT parsingTest(std::string _phrase) {
+    auto p = parserCode;
+
+    if (luaL_dostring(L, p.c_str()) == LUA_OK) {
+      std::cout << "is in=";
+      lua_getglobal(L, "a");
+      if (lua_isnumber(L,-1)) {
+        int a = lua_tonumber(L,-1);
+        std::cout << a << std::endl;
+        
+        return {{{(uint8_t)a}}};
+      }
+    }
+    
+    return {{{45}}};
+  }
 
   phraseT parsing(std::string _phrase) {
     phraseT v{};
@@ -109,7 +128,7 @@ const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
 void displayOptionsMenu(std::string menuVers="") {
   using namespace std;
   cout << "----------------------" << endl;
-  cout << "  line " << VERSION << " midi seq  " << endl;
+  cout << "  line " << _VERSION << " midi seq  " << endl;
   cout << "----------------------" << endl;
   cout << "..<[n] >    phrase    " << endl;
   cout << "..bpm<[n]>  bpm       " << endl;
@@ -386,7 +405,8 @@ int main() {
       } else {
         // it's a phrase, if it's not a command
         phraseT tempPhrase{};
-        tempPhrase = parser.parsing(opt);
+        // tempPhrase = parser.parsing(opt);
+        tempPhrase = parser.parsingTest(opt);
     
         if (!tempPhrase.empty()) {
           phrase = tempPhrase;
