@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19)
 
 project(lualib_project C)
 
-add_library(lua4line SHARED
+add_library(lua4line STATIC
   lapi.c
   lauxlib.c
   lbaselib.c
@@ -40,8 +40,11 @@ add_library(lua4line SHARED
 
 install(TARGETS lua4line DESTINATION lib)
 
-install(DIRECTORY "${CMAKE_SOURCE_DIR}/externals/lua"
-  DESTINATION include
-  FILES_MATCHING
-  PATTERN "*.h" PATTERN "*.hpp"
-)
+# install(DIRECTORY "${CMAKE_SOURCE_DIR}/externals/lua"
+#   DESTINATION include
+#   FILES_MATCHING
+#   PATTERN "*.h" PATTERN "*.hpp"
+# )
+
+install(FILES lua.h lualib.h lauxlib.h DESTINATION include/lua)
+
