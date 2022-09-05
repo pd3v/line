@@ -11,6 +11,10 @@
 
 <!-- [macos binaries](https://github.com/pd3v/line/actions/runs/1802392423) -->
 
+### To clone this repo with *rtmidi* submodule included
+
+`git clone --recursive https://github.com/pd3v/line.git`
+
 ### To build and run *line* 
 
 #### Install lua language and lpeg (used for parsing) first
