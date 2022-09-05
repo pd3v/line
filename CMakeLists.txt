@@ -11,9 +11,9 @@ add_executable("${PROJECT_NAME}" line.cpp)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  SET(LIB_LUA_NAME "liblua.a liblua.dylib")
+  SET(LIB_LUA_NAME liblua.a liblua.dylib)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  SET(LIB_LUA_NAME "liblua.a liblua.so")
+  SET(LIB_LUA_NAME liblua.a liblua.so)
 endif ()
 
 FIND_PATH(LUA_INCLUDE_DIR lua.h
