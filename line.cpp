@@ -19,6 +19,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/rtmidi/RtMidi.h"
+#include <tuple>
+// #include <std::any>
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
 #endif
@@ -205,7 +207,49 @@ phraseT xscramble(phraseT _phrase) {
 
 std::string prompt = PROMPT;
 
-int main() {
+std::tuple<bool,int,std::string,float, float> setUserDefaults() {
+  return std::make_tuple(true,1,"a",0.,127.);
+}
+
+std::tuple<bool,int,std::string,float, float> setUserDefaults(int argc, char **argv) {
+  // line args order: notes/cc ch label scale
+  auto noteCC{strcmp(argv[1],"n")};
+  auto ch{std::stoi(argv[2],nullptr)};
+
+  // auto noArgsDefaults = std::make_tuple(true,1,"",0,127);
+  // std::cout << argc << std::endl;
+  // if(argc == 1) {
+  //   std::cout << argc << std::endl;
+  //   return std::make_tuple(true,1,"a",0.,127.);
+  // }  
+  // else
+  //   return std::make_tuple(!noteCC,ch,argv[3],0,127);
+
+  return std::make_tuple(!noteCC,ch,argv[3],0,127);
+
+  /* 
+   std::size_t pos{};
+        try
+        {
+            std::cout << "std::stoi('" << *argv->at(1) << "'): ";
+            const int i {std::stoi(*argv->at(1) , &pos)};
+            std::cout << i << "; pos: " << pos << '\n';
+        }
+        catch(std::invalid_argument const& ex)
+        {
+            std::cout << "std::invalid_argument::what(): " << ex.what() << '\n';
+        }
+   */       
+  // for(int i = 1;i < argc;++i) {
+  //   std::cout << argv[i] << std::endl; 
+  // }
+  // return noteCC;
+  
+}
+
+// bool beatOn;
+
+int main(int argc, char **argv) {
   Parser parser;
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
@@ -252,7 +296,7 @@ int main() {
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
-        
+                
         if (_rNotes) {
             for (auto& _subPhrase : _phrase) {
               for (auto& _subsubPhrase : _subPhrase) {
@@ -262,9 +306,7 @@ int main() {
                   noteMessage[2] = ((notes == REST_VAL) || muted) ? 0 : amplitude;
                   midiOut.sendMessage(&noteMessage);
                 }
-
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/_subPhrase.size())-iterDur)));
-
                 for (auto& notes : _subsubPhrase) {  
                   noteMessage[0] = 128+_ch;
                   noteMessage[1] = notes;
@@ -304,8 +346,20 @@ int main() {
     }
     return "line is off.\n";
   });
-  
-  displayOptionsMenu("");
+
+  // std::tie(rNotes,ch) = setUserDefaults(argc,argv);
+  rNotes = std::get<0>(setUserDefaults(argc,argv));
+  if(rNotes) 
+    ch = std::get<1>(setUserDefaults(argc,argv));
+  else
+    ccCh = std::get<1>(setUserDefaults(argc,argv));
+    // "~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length())
+  prompt = "~"+std::get<2>(setUserDefaults(argc,argv))+">" ; 
+
+  std::cout << "line " << VERSION << " is on." << std::endl;
+
+  // std::cout << "rNotes:" << (rNotes == true ? "true" : "false") << " ch:" << static_cast<int>(ch) << " ccCh:" << static_cast<int>(ccCh) << std::endl;
+  // displayOptionsMenu("");
   
   while (!exit) {
     opt = readline(prompt.c_str());
