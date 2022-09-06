@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>  
 #include <string>
+#include <cstring>
 #include <chrono>
 #include <future>
 #include <mutex>
@@ -20,26 +21,29 @@
 #include <readline/history.h>
 #include "externals/rtmidi/RtMidi.h"
 #include <tuple>
-// #include <std::any>
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
 #endif
 extern "C" {
-  #include "externals/lua/lua.h"
-	#include "externals/lua/lualib.h"
-	#include "externals/lua/lauxlib.h"
+  #include "lua.h"
+	#include "lualib.h"
+	#include "lauxlib.h"
 }
 
 using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
 
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
-const std::string VERSION = "0.3.3";
+const std::string VERSION = "0.4";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
 
-long iterDur = 5; // milliseconds
+const long iterDur = 5; // milliseconds
+float amplitude = 127;
+bool muted = false;
+
+std::tuple<bool,int,const char*,float,float> lineParams{"n",1,PROMPT,0,127};
 
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
@@ -139,9 +143,6 @@ void displayOptionsMenu(std::string menuVers="") {
   if (rand()%10+1 == 1) cout << "          author:pd3v" << endl;
 }
 
-float amplitude = 127;
-bool muted = false;
-
 void amp(float _amplitude) {
   amplitude = 127*_amplitude;
 }
@@ -206,48 +207,19 @@ phraseT xscramble(phraseT _phrase) {
 }
 
 std::string prompt = PROMPT;
-
-std::tuple<bool,int,std::string,float, float> setUserDefaults() {
-  return std::make_tuple(true,1,"a",0.,127.);
+;
+void setLineParamsOnStart(int argc, char **argv) {
+  // line args order: notes/cc ch label scale_min scale_max
+  if(argc > 1) {
+    try {
+      std::string _prompt(argv[3]);
+      _prompt = "~"+_prompt+">";
+      lineParams = {argv[1],std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),std::stoi(argv[4],nullptr),std::stoi(argv[5],nullptr)};
+    } catch(const std::exception& _err) {
+        std::cerr << "Invalid n/cc/min/max value(s)." << std::endl;
+    }
+  }
 }
-
-std::tuple<bool,int,std::string,float, float> setUserDefaults(int argc, char **argv) {
-  // line args order: notes/cc ch label scale
-  auto noteCC{strcmp(argv[1],"n")};
-  auto ch{std::stoi(argv[2],nullptr)};
-
-  // auto noArgsDefaults = std::make_tuple(true,1,"",0,127);
-  // std::cout << argc << std::endl;
-  // if(argc == 1) {
-  //   std::cout << argc << std::endl;
-  //   return std::make_tuple(true,1,"a",0.,127.);
-  // }  
-  // else
-  //   return std::make_tuple(!noteCC,ch,argv[3],0,127);
-
-  return std::make_tuple(!noteCC,ch,argv[3],0,127);
-
-  /* 
-   std::size_t pos{};
-        try
-        {
-            std::cout << "std::stoi('" << *argv->at(1) << "'): ";
-            const int i {std::stoi(*argv->at(1) , &pos)};
-            std::cout << i << "; pos: " << pos << '\n';
-        }
-        catch(std::invalid_argument const& ex)
-        {
-            std::cout << "std::invalid_argument::what(): " << ex.what() << '\n';
-        }
-   */       
-  // for(int i = 1;i < argc;++i) {
-  //   std::cout << argv[i] << std::endl; 
-  // }
-  // return noteCC;
-  
-}
-
-// bool beatOn;
 
 int main(int argc, char **argv) {
   Parser parser;
@@ -264,6 +236,8 @@ int main(int argc, char **argv) {
   bool rNotes = true;
   bool sync = false;
   std::deque<phraseT> last3Phrases{};
+
+  setLineParamsOnStart(argc,argv);
 
   std::string opt;
   
@@ -347,20 +321,9 @@ int main(int argc, char **argv) {
     return "line is off.\n";
   });
 
-  // std::tie(rNotes,ch) = setUserDefaults(argc,argv);
-  rNotes = std::get<0>(setUserDefaults(argc,argv));
-  if(rNotes) 
-    ch = std::get<1>(setUserDefaults(argc,argv));
-  else
-    ccCh = std::get<1>(setUserDefaults(argc,argv));
-    // "~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length())
-  prompt = "~"+std::get<2>(setUserDefaults(argc,argv))+">" ; 
-
+  prompt = static_cast<std::string>(std::get<2>(lineParams)) ; 
   std::cout << "line " << VERSION << " is on." << std::endl;
 
-  // std::cout << "rNotes:" << (rNotes == true ? "true" : "false") << " ch:" << static_cast<int>(ch) << " ccCh:" << static_cast<int>(ccCh) << std::endl;
-  // displayOptionsMenu("");
-  
   while (!exit) {
     opt = readline(prompt.c_str());
 
