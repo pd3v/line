@@ -1,4 +1,10 @@
-## 0.3
+## 0.4
+
+. Start line using arguments, to set n/cc, channel/cc value, re-label prompt and input values range
+
+____
+
+## 0.3.4
 
 . Left and right arrow keys enable in-line phrase editing 
 
