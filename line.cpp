@@ -19,6 +19,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/rtmidi/RtMidi.h"
+#include <tuple>
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
 #endif
@@ -32,12 +33,16 @@ using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
 
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
-const std::string VERSION = "0.3.4";
+const std::string VERSION = "0.4";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
 
-long iterDur = 5; // milliseconds
+const long iterDur = 5; // milliseconds
+float amplitude = 127;
+bool muted = false;
+
+std::tuple<bool,int,const char*,float,float> lineParams{"n",1,PROMPT,0,127};
 
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
@@ -137,9 +142,6 @@ void displayOptionsMenu(std::string menuVers="") {
   if (rand()%10+1 == 1) cout << "          author:pd3v" << endl;
 }
 
-float amplitude = 127;
-bool muted = false;
-
 void amp(float _amplitude) {
   amplitude = 127*_amplitude;
 }
@@ -204,8 +206,21 @@ phraseT xscramble(phraseT _phrase) {
 }
 
 std::string prompt = PROMPT;
+;
+void setLineParamsOnStart(int argc, char **argv) {
+  // line args order: notes/cc ch label scale_min scale_max
+  if(argc > 1) {
+    try {
+      std::string _prompt(argv[3]);
+      _prompt = "~"+_prompt+">";
+      lineParams = {argv[1],std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),std::stoi(argv[4],nullptr),std::stoi(argv[5],nullptr)};
+    } catch(const std::exception& _err) {
+        std::cerr << "Invalid n/cc/min/max value(s)." << std::endl;
+    }
+  }
+}
 
-int main() {
+int main(int argc, char **argv) {
   Parser parser;
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
@@ -220,6 +235,8 @@ int main() {
   bool rNotes = true;
   bool sync = false;
   std::deque<phraseT> last3Phrases{};
+
+  setLineParamsOnStart(argc,argv);
 
   std::string opt;
   
@@ -252,7 +269,7 @@ int main() {
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
-        
+                
         if (_rNotes) {
             for (auto& _subPhrase : _phrase) {
               for (auto& _subsubPhrase : _subPhrase) {
@@ -262,9 +279,7 @@ int main() {
                   noteMessage[2] = ((notes == REST_VAL) || muted) ? 0 : amplitude;
                   midiOut.sendMessage(&noteMessage);
                 }
-
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/_subPhrase.size())-iterDur)));
-
                 for (auto& notes : _subsubPhrase) {  
                   noteMessage[0] = 128+_ch;
                   noteMessage[1] = notes;
@@ -304,9 +319,10 @@ int main() {
     }
     return "line is off.\n";
   });
-  
-  displayOptionsMenu("");
-  
+
+  prompt = static_cast<std::string>(std::get<2>(lineParams)) ; 
+  std::cout << "line " << VERSION << " is on." << std::endl;
+
   while (!exit) {
     opt = readline(prompt.c_str());
 
