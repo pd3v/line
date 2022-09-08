@@ -42,8 +42,6 @@ const long iterDur = 5; // milliseconds
 float amplitude = 127;
 bool muted = false;
 
-std::tuple<bool,int,const char*,float,float> lineParams{"n",1,PROMPT,0,127};
-
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
   lua_State *L = luaL_newstate();
@@ -206,18 +204,30 @@ phraseT xscramble(phraseT _phrase) {
 }
 
 std::string prompt = PROMPT;
-;
-void setLineParamsOnStart(int argc, char **argv) {
-  // line args order: notes/cc ch label scale_min scale_max
-  if(argc > 1) {
-    try {
-      std::string _prompt(argv[3]);
-      _prompt = "~"+_prompt+">";
-      lineParams = {argv[1],std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),std::stoi(argv[4],nullptr),std::stoi(argv[5],nullptr)};
-    } catch(const std::exception& _err) {
-        std::cerr << "Invalid n/cc/min/max value(s)." << std::endl;
+
+std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
+  // line args order: notes/cc ch label range_begin range_end
+  std::tuple<bool,uint8_t,const char*,float,float> lineParams{"n",0,PROMPT,0,127};
+  if (argc > 1) {
+    std::string _prompt(argv[3]);
+    _prompt = "~"+_prompt+">";
+    auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
+    
+    if (argc == 6) {
+      try {
+        lineParams = {notesOrCC,std::stoi(argv[2],nullptr)-1,strcpy(new char[_prompt.length()+1],_prompt.c_str()),std::stoi(argv[4],nullptr),std::stoi(argv[5],nullptr)};
+      } catch(const std::exception& _err) {
+          std::cerr << "Invalid n/cc/min/max value(s)." << std::endl;
+      }
+    } else if (argc == 4) {
+      try {
+        lineParams = {notesOrCC,std::stoi(argv[2],nullptr)-1,strcpy(new char[_prompt.length()+1],_prompt.c_str()),0,127};
+      } catch(const std::exception& _err) {
+          std::cerr << "Invalid n/cc value(s)." << std::endl;
+      }
     }
   }
+  return lineParams;
 }
 
 int main(int argc, char **argv) {
@@ -230,13 +240,15 @@ int main(int argc, char **argv) {
   
   std::vector<uint8_t> noteMessage;
   phraseT phrase{};
-  uint8_t ch = 0;
-  uint8_t ccCh = 0;
-  bool rNotes = true;
+
+  bool rNotes;
+  uint8_t ch,ccCh,tempCh;
+  float rangeMin,rangeMax;
+  std::tie(rNotes,tempCh,prompt,rangeMin,rangeMax) = lineParamsOnStart(argc,argv);
+  if (rNotes) ch = tempCh; else ccCh = tempCh; // ouch!
+  
   bool sync = false;
   std::deque<phraseT> last3Phrases{};
-
-  setLineParamsOnStart(argc,argv);
 
   std::string opt;
   
@@ -253,9 +265,9 @@ int main(int argc, char **argv) {
   auto fut = async(std::launch::async, [&](){
     unsigned long partial = 0;
     phraseT _phrase{};
-    uint8_t _ch = 0;
-    uint8_t _ccCh = 0;
-    bool _rNotes = true;
+    uint8_t _ch = ch;
+    uint8_t _ccCh = ccCh;
+    bool _rNotes = rNotes;
     
     // waiting for live coder's first phrase 
     std::unique_lock<std::mutex> lckWait(mtxWait);
@@ -320,7 +332,6 @@ int main(int argc, char **argv) {
     return "line is off.\n";
   });
 
-  prompt = static_cast<std::string>(std::get<2>(lineParams)) ; 
   std::cout << "line " << VERSION << " is on." << std::endl;
 
   while (!exit) {
@@ -344,7 +355,7 @@ int main(int argc, char **argv) {
           phrase.push_back({{REST_VAL}});
       } else if (opt.substr(0,2) == "cc") {
           try {
-            ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+            ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1))-1);
             rNotes = false;
           }
           catch (...) {
