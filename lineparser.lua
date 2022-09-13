@@ -47,9 +47,11 @@ local rest = lpeg.S("-") / replaceRest
 local cipher = lpeg.R("ag")
 local oct = lpeg.R("08")^-1
 local bs = lpeg.S("bs")^-1
+local one_note_exclusions = lpeg.S(".(")^1
 local cipher_bs_oct = lpeg.P(cipher * bs * oct)^1 / noteCipherToMidi
 
-local noteP = lpeg.Cg(((note + cipher_bs_oct + rest)^1 * (sep^1 * (note + cipher_bs_oct + rest))^0)^1) / addToNoteTable
+-- local noteP = lpeg.Cg(((note + cipher_bs_oct + rest)^1 * (sep^1 * (note + cipher_bs_oct + rest))^0)^1) / addToNoteTable
+local noteP = lpeg.Cg((- one_note_exclusions * (note + cipher_bs_oct + rest)^1 * (sep^1 * (note + cipher_bs_oct + rest))^0)^1) / addToNoteTable
 local chordP = lpeg.Cg(("(" * ((note + cipher_bs_oct + rest)^1 * (sep^1 * (note + cipher_bs_oct + rest))^0)^1 * ")")) / addToChordTable
 local subP = lpeg.Cg(("." * ((note + cipher_bs_oct + rest)^1 * (sep^1 * (note + cipher_bs_oct + rest))^0)^1 * ".")) / addToNoteTable
 
