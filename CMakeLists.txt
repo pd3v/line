@@ -18,12 +18,12 @@ SET(LUA_LIB_NAME liblua5.4-0.a liblua5.4-0.so)
 # )
 # message(LUA_INCLUDE_DIR=${LUA_INCLUDE_DIR})
 
-target_include_directories(
-  ${PROJECT_NAME} PUBLIC
-  # ${LUA_INCLUDE_DIR}
-  /usr/include/lua5.4/
-  /usr/include/
-)
+# target_include_directories(
+#   ${PROJECT_NAME} PUBLIC
+#   # ${LUA_INCLUDE_DIR}
+#   /usr/include/lua5.4/
+#   /usr/include/
+# )
 
 FIND_LIBRARY(LUA_LIB_FILE
   NAMES ${LUA_LIB_NAME}

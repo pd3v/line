@@ -24,9 +24,9 @@
 #include <termios.h>
 #endif
 extern "C" {
-  #include "lua.h"
-	#include "lualib.h"
-	#include "lauxlib.h"
+  #include "/usr/include/lua5.4/lua.h"
+	#include "/usr/include/lua5.4/lualib.h"
+	#include "/usr/include/lua5.4/lauxlib.h"
 }
 
 using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
