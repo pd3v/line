@@ -10,7 +10,7 @@ add_executable("${PROJECT_NAME}" line.cpp)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi)
 
-SET(LUA_LIB_NAME liblua5.4-0.a liblua5.4-0.so)
+SET(LUA_LIB_NAME liblua5.4-0 liblua5.4-0.a liblua5.4-0.so)
 
 # FIND_PATH(LUA_INCLUDE_DIR lua.h
 #   /usr/include/
@@ -27,7 +27,7 @@ SET(LUA_LIB_NAME liblua5.4-0.a liblua5.4-0.so)
 
 FIND_LIBRARY(LUA_LIB_FILE
   NAMES ${LUA_LIB_NAME}
-  PATHS /usr/lib/lua.5.4/ /usr/lib/
+  PATHS /usr/lib/lua.5.4/ /usr/lib/ /usr/share/doc/
 )
 message(LUA_LIB_FILE=${LUA_LIB_FILE})
 
