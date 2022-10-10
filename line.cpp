@@ -19,7 +19,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/rtmidi/RtMidi.h"
-#include <tuple>
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
 #endif
@@ -29,11 +28,13 @@ extern "C" {
 	#include "lauxlib.h"
 }
 
-using phraseT = std::vector<std::vector<std::vector<uint8_t>>>;
+using noteAmpT = std::pair<uint8_t,float>;
+using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
-const std::string VERSION = "0.4";
+const char *PREPEND_CUSTOM_PROMPT = "_";
+const std::string VERSION = "0.4.1";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
@@ -60,8 +61,8 @@ public:
 
   phraseT parsing(std::string _phrase) {
     phraseT v{};
-    std::vector<std::vector<uint8_t>> subv{};
-    std::vector<uint8_t> subsubv{};
+    std::vector<std::vector<noteAmpT>> subv{};
+    std::vector<noteAmpT> subsubv{};
 
     auto p = parserCode + " t = lpeg.match(phraseG, \"" + _phrase + "\")";
 
@@ -74,7 +75,7 @@ public:
         lua_gettable(L,-2);
         size_t table = lua_rawlen(L,-2);
         size_t subtable,subsubtable;
-
+        
         for (int i=0; i<table; ++i) {
           lua_next(L,-2);      
           lua_pushnil(L);
@@ -83,20 +84,28 @@ public:
           for (int j=0; j<subtable; ++j) {
             lua_next(L,-2);      
             lua_pushnil(L);
-            subsubtable = lua_rawlen(L,-2);  
-
+            subsubtable = lua_rawlen(L,-2);
+                    
             for (int k=0; k<subsubtable; ++k) {
               lua_next(L,-2);
-              subsubv.push_back(static_cast<uint8_t>(lua_tonumber(L,-1)));
+              lua_pushnil(L);
+              lua_next(L,-2);
+              uint8_t note = lua_tonumber(L,-1);
               lua_pop(L,1);
+              lua_next(L,-2);
+              float amp = lua_tonumber(L,-1);
+              lua_pop(L,1);
+            
+              subsubv.push_back({note,amp});
+              lua_pop(L,2);
             }
+            
             subv.push_back(subsubv);
             subsubv.clear();
             lua_pop(L,2);
           }
           v.push_back(subv);
           subv.clear();
-
           lua_pop(L,2);
         }
       }
@@ -179,7 +188,7 @@ phraseT scramble(phraseT _phrase) {
 }
 
 phraseT xscramble(phraseT _phrase) {
-  std::vector<uint8_t> pattValues {};
+  std::vector<noteAmpT> pattValues {};
 
   for (auto& _subPhrase : _phrase)
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
@@ -203,6 +212,58 @@ phraseT xscramble(phraseT _phrase) {
   return _phrase;
 }
 
+phraseT scrambleAmp(phraseT _phrase) {
+  std::vector<float> amps{};
+  auto idx = 0;
+
+  for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {
+        amps.emplace_back(_noteAmp.second);
+      });
+    });
+
+    std::random_shuffle(amps.begin(),amps.end());
+
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {  
+      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {    
+        _noteAmp.second = amps.at(idx);
+      });
+      ++idx;  
+    });
+    amps.clear();
+    idx = 0;
+  });
+
+  return _phrase;
+}
+
+phraseT xscrambleAmp(phraseT _phrase) {
+  std::vector<float> amps{};
+  auto cnt = 0;
+
+  for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {
+        amps.emplace_back(_noteAmp.second);
+      });
+    });
+  });
+
+  std::random_shuffle(amps.begin(),amps.end());
+  
+  for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {
+        _noteAmp.second = amps.at(cnt);
+        ++cnt;
+      });
+    });
+  });
+
+  return _phrase;
+}
+. 
 std::string prompt = PROMPT;
 
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
@@ -210,7 +271,7 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
   std::tuple<bool,uint8_t,const char*,float,float> lineParams{"n",0,PROMPT,0,127};
   if (argc > 1) {
     std::string _prompt(argv[3]);
-    _prompt = "~"+_prompt+">";
+    _prompt = PREPEND_CUSTOM_PROMPT+_prompt+">";
     auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
     
     if (argc == 6) {
@@ -287,14 +348,14 @@ int main(int argc, char **argv) {
               for (auto& _subsubPhrase : _subPhrase) {
                 for (auto& notes : _subsubPhrase) {
                   noteMessage[0] = 144+_ch;
-                  noteMessage[1] = notes;
-                  noteMessage[2] = ((notes == REST_VAL) || muted) ? 0 : amplitude;
+                  noteMessage[1] = notes.first;
+                  noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second*127;
                   midiOut.sendMessage(&noteMessage);
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/_subPhrase.size())-iterDur)));
                 for (auto& notes : _subsubPhrase) {  
                   noteMessage[0] = 128+_ch;
-                  noteMessage[1] = notes;
+                  noteMessage[1] = notes.first;
                   noteMessage[2] = 0;
                   midiOut.sendMessage(&noteMessage);
                 }
@@ -307,7 +368,7 @@ int main(int argc, char **argv) {
                 for (auto& ccValues : subsubPhrase) {
                 noteMessage[0] = 176+_ch;
                 noteMessage[1] = _ccCh;
-                noteMessage[2] = ccValues;
+                noteMessage[2] = ccValues.first;
                 midiOut.sendMessage(&noteMessage);
                 }
               
@@ -320,7 +381,7 @@ int main(int argc, char **argv) {
                 for (auto& ccValues : subsubPhrase) {
                 noteMessage[0] = 176+_ch;
                 noteMessage[1] = _ccCh;
-                noteMessage[2] = ccValues;
+                noteMessage[2] = ccValues.first;
                 midiOut.sendMessage(&noteMessage);
               }
                 std::this_thread::sleep_for(std::chrono::milliseconds(OFF_SYNC_DUR));
@@ -352,7 +413,7 @@ int main(int argc, char **argv) {
       } else if (opt == "n") {
           rNotes = true;
           phrase.clear();
-          phrase.push_back({{REST_VAL}});
+          phrase.push_back({{{REST_VAL,0}}});
       } else if (opt.substr(0,2) == "cc") {
           try {
             ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1))-1);
@@ -387,6 +448,10 @@ int main(int argc, char **argv) {
           phrase = reverse(phrase);
       } else if (opt == "s") {    
           phrase = scramble(phrase);
+      } else if (opt == "sa") {    
+          phrase = scrambleAmp(phrase);
+      } else if (opt == "xa") {    
+          phrase = xscrambleAmp(phrase);
       } else if (opt == "x") {    
           phrase = xscramble(phrase);
       } else if (opt == "l" || opt == "l1") { 
@@ -408,7 +473,7 @@ int main(int argc, char **argv) {
 
           if (opt.length() > 2) {
             std::string _prompt =  PROMPT;
-            prompt = "~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
+            prompt = PREPEND_CUSTOM_PROMPT+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
           }
       } else {
         // it's a phrase, if it's not a command
@@ -417,7 +482,7 @@ int main(int argc, char **argv) {
     
         if (!tempPhrase.empty()) {
           phrase = tempPhrase;
-
+          
           add_history(opt.c_str());
           tempPhrase.clear();
 
