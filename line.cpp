@@ -59,7 +59,7 @@ public:
   }
   ~Parser() {lua_close(L);};
 
-  phraseT parsing(std::string _phrase) {
+  phraseT parsingOriginal(std::string _phrase) {
     phraseT v{};
     std::vector<std::vector<noteAmpT>> subv{};
     std::vector<noteAmpT> subsubv{};
@@ -75,6 +75,22 @@ public:
         lua_gettable(L,-2);
         size_t table = lua_rawlen(L,-2);
         size_t subtable,subsubtable;
+
+        /*lua_next(L,-2);      
+        lua_pushnil(L);
+          
+        lua_next(L,-2);      
+        lua_pushnil(L);
+            
+        lua_next(L,-2);
+        lua_pushnil(L);
+        lua_next(L,-2);
+        std::cout << lua_tostring(L,-1) << " " << std::flush;
+
+        lua_pop(L,1);
+        lua_next(L,-2);
+        std::cout << lua_tostring(L,-1) << std::flush;
+        lua_pop(L,1);*/
         
         for (int i=0; i<table; ++i) {
           lua_next(L,-2);      
@@ -108,6 +124,135 @@ public:
           subv.clear();
           lua_pop(L,2);
         }
+      }
+    }
+
+    // phraseT ah{{{{24,1}}}};
+    // return ah;
+    return v;
+  }
+
+  noteAmpT retreiveNoteAmp() {
+    lua_next(L,-2);      
+    lua_pushnil(L);
+
+    lua_next(L,-2);
+    int note = lua_tonumber(L,-1);
+    lua_pop(L,1);
+
+    lua_next(L,-2);
+    float amp = lua_tonumber(L,-1);
+    lua_pop(L,1);
+    return {note,amp};
+  }
+
+  phraseT parsing(std::string _phrase) {
+    phraseT v{};
+    std::vector<std::vector<noteAmpT>> subv{};
+    std::vector<noteAmpT> subsubv{};
+
+    auto p = parserCode + " t = lpeg.match(phraseG, \"" + _phrase + "\")";
+
+    if (luaL_dostring(L, p.c_str()) == LUA_OK) {
+      lua_getglobal(L, "t");
+      
+      // 3D Lua table to c++ vector
+      if (lua_istable(L,-1)) {
+        lua_pushnil(L);
+        lua_gettable(L,-2);
+        size_t tableSize = lua_rawlen(L,-2);
+        size_t subtableSize,subsubtableSize;
+        std::string musicStructType;
+        int8_t note; float amp;
+        
+        for (int i=0; i<tableSize; ++i) {
+          lua_next(L,-2);      
+          lua_pushnil(L);
+          subtableSize = lua_rawlen(L,-2);
+
+          lua_next(L,-2);
+          musicStructType = lua_tostring(L,-1);
+          lua_pop(L,1);    
+
+          lua_next(L,-2);      
+          lua_pushnil(L);
+          subsubtableSize = lua_rawlen(L,-2);
+
+          if (musicStructType == "n") {
+            
+            for (int i=0; i<subsubtableSize; ++i) {
+              // lua_next(L,-2);      
+              // lua_pushnil(L);
+
+              // lua_next(L,-2);
+              // int note = lua_tonumber(L,-1);
+              // lua_pop(L,1);
+
+              // lua_next(L,-2);
+              // float amp = lua_tonumber(L,-1);
+              // lua_pop(L,1);
+
+              std::tie(note,amp) = retreiveNoteAmp();
+
+              subsubv.push_back({note,amp});
+              subv.push_back(subsubv);
+              v.push_back(subv);
+              subsubv.clear();
+              subv.clear();
+              lua_pop(L,2);
+            };
+          } else if (musicStructType == "s") {
+              for (int i=0; i<subsubtableSize; ++i) {
+                // lua_next(L,-2);      
+                // lua_pushnil(L);
+
+                // lua_next(L,-2);
+                // int note = lua_tonumber(L,-1);
+                // lua_pop(L,1);
+
+                // lua_next(L,-2);
+                // float amp = lua_tonumber(L,-1);
+                // lua_pop(L,1);
+
+                std::tie(note,amp) = retreiveNoteAmp();
+
+                subsubv.push_back({note,amp});
+                subv.push_back(subsubv);  
+                subsubv.clear();
+                lua_pop(L,2);
+              }
+              
+              v.push_back(subv);
+              subv.clear();
+              subsubv.clear();
+
+          } else if (musicStructType == "c") {
+              for (int i=0; i<subsubtableSize; ++i) {
+                // lua_next(L,-2);      
+                // lua_pushnil(L);
+
+                // lua_next(L,-2);
+                // int note = lua_tonumber(L,-1);
+                // lua_pop(L,1);
+              
+                // lua_next(L,-2);
+                // float amp = lua_tonumber(L,-1);
+                // lua_pop(L,1);
+
+                std::tie(note,amp) = retreiveNoteAmp();
+
+                subsubv.push_back({note,amp});
+                lua_pop(L,2);
+              }
+              subv.push_back(subsubv);  
+              v.push_back(subv);
+              subsubv.clear();
+              subv.clear();
+          }
+      
+          lua_pop(L,2);
+          lua_pop(L,2);
+        }    
       }
     }
     return v;
@@ -263,7 +408,7 @@ phraseT xscrambleAmp(phraseT _phrase) {
 
   return _phrase;
 }
-. 
+ 
 std::string prompt = PROMPT;
 
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
@@ -478,6 +623,7 @@ int main(int argc, char **argv) {
       } else {
         // it's a phrase, if it's not a command
         phraseT tempPhrase{};
+        // tempPhrase = parser.parsing(opt);
         tempPhrase = parser.parsing(opt);
     
         if (!tempPhrase.empty()) {

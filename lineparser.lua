@@ -15,24 +15,23 @@ end
 function addToNoteTable(...)
   result = {}
   local arg = {...}
-
+  
   for i,v in ipairs(arg) do
-    result[#result+1] = {v}
+    result[#result+1] = v
   end
 
-  return result
+  return {'n',result}
 end
 
--- Redundant for now, same as "addToNoteTable"
 function addToSubTable(...)
   result = {}
   local arg = {...}
   
   for i,v in ipairs(arg) do
-    result[#result+1] = {v}
+    result[#result+1] = v
   end
 
-  return result
+  return {'s',result}
 end
 
 function addToChordTable(...)
@@ -44,7 +43,7 @@ function addToChordTable(...)
     result[#result+1] = v
   end
 
-  return {result}
+  return {'c',result}
 end
 
 function toNoteAmp(v)
@@ -82,10 +81,11 @@ end
 
 function noteCipherToMidi(c)
   local note,amp
-  ciphers = {c = 0,cb = 11,cs = 1,d = 2,db = 1,ds = 3,
+  ciphers = { c = 0,cb = 11,cs = 1,d = 2,db = 1,ds = 3,
               e = 4,eb = 3,f = 5,fb = 4,fs = 6,gb = 6,
               g = 7, gs = 8, ab = 8, a = 9, as = 10,
-              bb = 10,b = 11, bs = 12}
+              bb = 10,b = 11
+            }
   
   if string.find(c,AMP_SYMBOL) then
     note,amp = splitNoteAmp(c,AMP_SYMBOL)
