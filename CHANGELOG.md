@@ -1,3 +1,13 @@
+## 0.5
+
+. Set amplitude for each note and chord
+
+. `am`, master amplitude, is a % on notes and chords
+
+. `sa` and `xa`functions to scramble phrase amplitude
+
+____
+
 ## 0.4
 
 . Start line using arguments, to set n/cc, channel/cc value, re-label prompt and input values range
