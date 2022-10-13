@@ -181,8 +181,8 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..i         sync cc   " << endl;
     cout << "..o         async cc  " << endl;
     cout << "..lb<[a|n]> label     " << endl;
-    cout << "..sa      scramble amp" << endl;
-    cout << "..x      xscramble amp" << endl;
+    cout << "..sa        s amp     " << endl;
+    cout << "..xa        x amp    " << endl;
   }
   cout << "----------------------" << endl;
   
