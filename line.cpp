@@ -16,6 +16,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <algorithm> 
+
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/rtmidi/RtMidi.h"
@@ -42,6 +43,7 @@ const uint8_t OFF_SYNC_DUR = 100; // milliseconds
 const long iterDur = 5; // milliseconds
 float amplitude = 127;
 bool muted = false;
+phraseT phrase{};
 
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
@@ -58,79 +60,6 @@ public:
     parserCode = textBuffer.str();
   }
   ~Parser() {lua_close(L);};
-
-  phraseT parsingOriginal(std::string _phrase) {
-    phraseT v{};
-    std::vector<std::vector<noteAmpT>> subv{};
-    std::vector<noteAmpT> subsubv{};
-
-    auto p = parserCode + " t = lpeg.match(phraseG, \"" + _phrase + "\")";
-
-    if (luaL_dostring(L, p.c_str()) == LUA_OK) {
-      lua_getglobal(L, "t");
-      
-      // 3D Lua table to c++ vector
-      if (lua_istable(L,-1)) {
-        lua_pushnil(L);
-        lua_gettable(L,-2);
-        size_t table = lua_rawlen(L,-2);
-        size_t subtable,subsubtable;
-
-        /*lua_next(L,-2);      
-        lua_pushnil(L);
-          
-        lua_next(L,-2);      
-        lua_pushnil(L);
-            
-        lua_next(L,-2);
-        lua_pushnil(L);
-        lua_next(L,-2);
-        std::cout << lua_tostring(L,-1) << " " << std::flush;
-
-        lua_pop(L,1);
-        lua_next(L,-2);
-        std::cout << lua_tostring(L,-1) << std::flush;
-        lua_pop(L,1);*/
-        
-        for (int i=0; i<table; ++i) {
-          lua_next(L,-2);      
-          lua_pushnil(L);
-          subtable = lua_rawlen(L,-2);
-
-          for (int j=0; j<subtable; ++j) {
-            lua_next(L,-2);      
-            lua_pushnil(L);
-            subsubtable = lua_rawlen(L,-2);
-                    
-            for (int k=0; k<subsubtable; ++k) {
-              lua_next(L,-2);
-              lua_pushnil(L);
-              lua_next(L,-2);
-              uint8_t note = lua_tonumber(L,-1);
-              lua_pop(L,1);
-              lua_next(L,-2);
-              float amp = lua_tonumber(L,-1);
-              lua_pop(L,1);
-            
-              subsubv.push_back({note,amp});
-              lua_pop(L,2);
-            }
-            
-            subv.push_back(subsubv);
-            subsubv.clear();
-            lua_pop(L,2);
-          }
-          v.push_back(subv);
-          subv.clear();
-          lua_pop(L,2);
-        }
-      }
-    }
-
-    // phraseT ah{{{{24,1}}}};
-    // return ah;
-    return v;
-  }
 
   noteAmpT retreiveNoteAmp() {
     lua_next(L,-2);      
@@ -179,19 +108,7 @@ public:
           subsubtableSize = lua_rawlen(L,-2);
 
           if (musicStructType == "n") {
-            
             for (int i=0; i<subsubtableSize; ++i) {
-              // lua_next(L,-2);      
-              // lua_pushnil(L);
-
-              // lua_next(L,-2);
-              // int note = lua_tonumber(L,-1);
-              // lua_pop(L,1);
-
-              // lua_next(L,-2);
-              // float amp = lua_tonumber(L,-1);
-              // lua_pop(L,1);
-
               std::tie(note,amp) = retreiveNoteAmp();
 
               subsubv.push_back({note,amp});
@@ -203,17 +120,6 @@ public:
             };
           } else if (musicStructType == "s") {
               for (int i=0; i<subsubtableSize; ++i) {
-                // lua_next(L,-2);      
-                // lua_pushnil(L);
-
-                // lua_next(L,-2);
-                // int note = lua_tonumber(L,-1);
-                // lua_pop(L,1);
-
-                // lua_next(L,-2);
-                // float amp = lua_tonumber(L,-1);
-                // lua_pop(L,1);
-
                 std::tie(note,amp) = retreiveNoteAmp();
 
                 subsubv.push_back({note,amp});
@@ -221,24 +127,11 @@ public:
                 subsubv.clear();
                 lua_pop(L,2);
               }
-              
               v.push_back(subv);
               subv.clear();
               subsubv.clear();
-
           } else if (musicStructType == "c") {
-              for (int i=0; i<subsubtableSize; ++i) {
-                // lua_next(L,-2);      
-                // lua_pushnil(L);
-
-                // lua_next(L,-2);
-                // int note = lua_tonumber(L,-1);
-                // lua_pop(L,1);
-              
-                // lua_next(L,-2);
-                // float amp = lua_tonumber(L,-1);
-                // lua_pop(L,1);
-
+              for (int i=0; i<subsubtableSize; ++i) {                
                 std::tie(note,amp) = retreiveNoteAmp();
 
                 subsubv.push_back({note,amp});
@@ -288,6 +181,8 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..i         sync cc   " << endl;
     cout << "..o         async cc  " << endl;
     cout << "..lb<[a|n]> label     " << endl;
+    cout << "..sa      scramble amp" << endl;
+    cout << "..x      xscramble amp" << endl;
   }
   cout << "----------------------" << endl;
   
@@ -306,6 +201,28 @@ void unmute() {
   muted = false;
 }
 
+// For future uses
+template <typename T>
+inline phraseT map(std::function<void(T)> f) {
+  for_each(phrase.begin(),phrase.end(),[&](auto& _subPhrase) {
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      f(_subsubPhrase);
+    });
+  });
+  return phrase;
+}
+
+inline phraseT map(std::function<void(noteAmpT&)> f) {
+  for_each(phrase.begin(),phrase.end(),[&](auto& _subPhrase) {
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {
+        f(_noteAmp);
+      });
+    });
+  });
+  return phrase;
+}
+
 phraseT reverse(phraseT _phrase) {
   for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
     std::reverse(_subPhrase.begin(),_subPhrase.end());
@@ -313,8 +230,6 @@ phraseT reverse(phraseT _phrase) {
       std::reverse(_subsubPhrase.begin(),_subsubPhrase.end());
     });
   });
-
-  std::reverse(_phrase.begin(),_phrase.end());
 
   return _phrase;
 }
@@ -383,27 +298,19 @@ phraseT scrambleAmp(phraseT _phrase) {
   return _phrase;
 }
 
-phraseT xscrambleAmp(phraseT _phrase) {
+phraseT xscrambleAmp() {
   std::vector<float> amps{};
   auto cnt = 0;
 
-  for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
-    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
-      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {
-        amps.emplace_back(_noteAmp.second);
-      });
-    });
+  auto _phrase = map([&](auto& _noteAmp){
+     amps.emplace_back(_noteAmp.second);
   });
-
+     
   std::random_shuffle(amps.begin(),amps.end());
-  
-  for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
-    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
-      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {
-        _noteAmp.second = amps.at(cnt);
-        ++cnt;
-      });
-    });
+
+  _phrase = map([&](auto& _noteAmp){
+    _noteAmp.second = amps.at(cnt);
+    ++cnt;
   });
 
   return _phrase;
@@ -445,7 +352,6 @@ int main(int argc, char **argv) {
   long barDur = bpm(DEFAULT_BPM,refBarDur);
   
   std::vector<uint8_t> noteMessage;
-  phraseT phrase{};
 
   bool rNotes;
   uint8_t ch,ccCh,tempCh;
@@ -581,7 +487,8 @@ int main(int argc, char **argv) {
           exit = true;
       } else if (opt.substr(0,2) == "am") {
           try {
-            amp(std::stof(opt.substr(2,opt.size()-1)));
+            auto newAmp = std::stof(opt.substr(2,opt.size()-1));
+            phrase = map([&](auto& _n){_n.second != 0 ? _n.second *= newAmp : _n.second = newAmp;});
           } catch (...) {
             std::cerr << "Invalid amplitude." << std::endl; 
           }
@@ -595,10 +502,10 @@ int main(int argc, char **argv) {
           phrase = scramble(phrase);
       } else if (opt == "sa") {    
           phrase = scrambleAmp(phrase);
-      } else if (opt == "xa") {    
-          phrase = xscrambleAmp(phrase);
       } else if (opt == "x") {    
           phrase = xscramble(phrase);
+      } else if (opt == "xa") {    
+          phrase = xscrambleAmp();
       } else if (opt == "l" || opt == "l1") { 
           if (!last3Phrases.empty()) phrase = last3Phrases.at(0); 
           else std::cout << "Invalid phrase reference." << std::endl; 
@@ -623,7 +530,6 @@ int main(int argc, char **argv) {
       } else {
         // it's a phrase, if it's not a command
         phraseT tempPhrase{};
-        // tempPhrase = parser.parsing(opt);
         tempPhrase = parser.parsing(opt);
     
         if (!tempPhrase.empty()) {
