@@ -3,7 +3,7 @@ local write = io.write
 lpeg.locale(lpeg)
 
 local AMP_SYMBOL = "~"
-local ampGlobal
+local ampGlobal = 127
 
 function splitNoteAmp(s,sep)
   sep = lpeg.P(sep)
@@ -50,9 +50,9 @@ function toNoteAmp(v)
   result = {}
   if string.find(v,AMP_SYMBOL) then
     note,amp = splitNoteAmp(v,AMP_SYMBOL)
-    result = {tonumber(note),tonumber(amp)}
+    result = {tonumber(note),tonumber(amp)*127}
   else
-    result =  {tonumber(v),tonumber(1)}
+    result =  {tonumber(v),127}
   end
   return result
 end
@@ -61,8 +61,9 @@ end
 function toChordAmp(v)
   if string.find(v,AMP_SYMBOL) then
     chord,amp = splitNoteAmp(v,AMP_SYMBOL)
+    amp = amp*127
   else
-    amp = 1  
+    amp = 127  
   end
   ampGlobal = amp
 end
@@ -91,7 +92,7 @@ function noteCipherToMidi(c)
     note,amp = splitNoteAmp(c,AMP_SYMBOL)
   else
     note = c
-    amp = 1
+    amp = 127
   end
 
   octave = string.sub(note,(#note > 1) and -1 or 1):match("^%-?%d+$")

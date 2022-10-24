@@ -29,7 +29,7 @@ extern "C" {
 	#include "lauxlib.h"
 }
 
-using noteAmpT = std::pair<uint8_t,float>;
+using noteAmpT = std::pair<uint8_t,uint8_t>;
 using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 
 const float DEFAULT_BPM = 60.0;
@@ -92,7 +92,7 @@ public:
         size_t tableSize = lua_rawlen(L,-2);
         size_t subtableSize,subsubtableSize;
         std::string musicStructType;
-        int8_t note; float amp;
+        int8_t note, amp;
         
         for (int i=0; i<tableSize; ++i) {
           lua_next(L,-2);      
@@ -199,17 +199,6 @@ void mute() {
 
 void unmute() {
   muted = false;
-}
-
-// For future uses
-template <typename T>
-inline phraseT map(std::function<void(T)> f) {
-  for_each(phrase.begin(),phrase.end(),[&](auto& _subPhrase) {
-    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
-      f(_subsubPhrase);
-    });
-  });
-  return phrase;
 }
 
 inline phraseT map(std::function<void(noteAmpT&)> f) {
@@ -400,7 +389,7 @@ int main(int argc, char **argv) {
                 for (auto& notes : _subsubPhrase) {
                   noteMessage[0] = 144+_ch;
                   noteMessage[1] = notes.first;
-                  noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second*127;
+                  noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                   midiOut.sendMessage(&noteMessage);
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/_subPhrase.size())-iterDur)));
