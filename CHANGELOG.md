@@ -1,6 +1,6 @@
 ## 0.5
 
-. Set new range of values other then MIDI 0..127. Useful for CC.
+. Set new range of values other than MIDI 0..127. Useful for CC.
 
 . `mi` and `ma` to set min and max of a new range of values
 
