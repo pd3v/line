@@ -4,6 +4,7 @@ lpeg.locale(lpeg)
 
 local AMP_SYMBOL = "~"
 local ampGlobal = 127
+local range_min,range_max = 0,127
 
 function splitNoteAmp(s,sep)
   sep = lpeg.P(sep)
@@ -50,10 +51,11 @@ function toNoteAmp(v)
   result = {}
   if string.find(v,AMP_SYMBOL) then
     note,amp = splitNoteAmp(v,AMP_SYMBOL)
-    result = {tonumber(note),tonumber(amp)*127}
+    result = {tonumber(note),tonumber(amp*127)}
   else
     result =  {tonumber(v),127}
   end
+  
   return result
 end
 
@@ -80,7 +82,7 @@ function getValueForKey(t,key)
   return nil
 end
 
-function noteCipherToMidi(c)
+function noteCipherToMidi(cipher)
   local note,amp
   ciphers = { c = 0,cb = 11,cs = 1,d = 2,db = 1,ds = 3,
               e = 4,eb = 3,f = 5,fb = 4,fs = 6,gb = 6,
@@ -88,16 +90,16 @@ function noteCipherToMidi(c)
               bb = 10,b = 11
             }
   
-  if string.find(c,AMP_SYMBOL) then
-    note,amp = splitNoteAmp(c,AMP_SYMBOL)
+  if string.find(cipher,AMP_SYMBOL) then
+    note,amp = splitNoteAmp(cipher,AMP_SYMBOL)
   else
-    note = c
-    amp = 127
+    note = cipher
+    amp = 1
   end
 
   octave = string.sub(note,(#note > 1) and -1 or 1):match("^%-?%d+$")
   cipher_to_midi = getValueForKey(ciphers,string.sub(note,1,(octave ~= nil) and -2 or 1))+(12*((octave ~= nil) and octave or 0))
-
+  
   return toNoteAmp(tostring(cipher_to_midi)..AMP_SYMBOL..tostring(amp))
 end
 
@@ -125,4 +127,19 @@ local phraseG = lpeg.P {"phrase",
   chord = chordP;
   sub = subP;
   note = noteP;
+} * -1
+
+
+-- Phrases of different ranges other then MIDI 0-127
+function rescaleToMIDI(v)
+  v = (v-range_min)*127/(range_max-range_min)
+  return math.floor(v+0.5)
+end
+
+local numbr = lpeg.P(lpeg.P(("0.") + lpeg.S("."))^0 * note)^1 / rescaleToMIDI
+local rangeP = lpeg.Cg((numbr)^1 * (sep^1 * numbr)^0)
+
+local rangeG = lpeg.P {"prange",
+  prange = lpeg.Ct(lpeg.Cg(((V"range")^1 * (sep^1 * V"range")^0)^1));
+  range = rangeP;
 } * -1

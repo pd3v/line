@@ -43,6 +43,7 @@ const uint8_t OFF_SYNC_DUR = 100; // milliseconds
 const long iterDur = 5; // milliseconds
 float amplitude = 127;
 bool muted = false;
+std::pair<float,float> range{0,127};
 phraseT phrase{};
 
 class Parser {
@@ -73,6 +74,18 @@ public:
     float amp = lua_tonumber(L,-1);
     lua_pop(L,1);
     return {note,amp};
+  }
+
+  std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
+    auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) + "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
+    
+    if (luaL_dostring(L, parseRange.c_str()) == LUA_OK) {
+      lua_getglobal(L,"rs");
+      
+      if (lua_isstring(L,-1))
+        _phrase = lua_tostring(L,-1);
+    } 
+    return _phrase;
   }
 
   phraseT parsing(std::string _phrase) {
@@ -308,7 +321,7 @@ phraseT xscrambleAmp() {
 std::string prompt = PROMPT;
 
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
-  // line args order: notes/cc ch label range_begin range_end
+  // line args order: notes/cc ch label range min range max
   std::tuple<bool,uint8_t,const char*,float,float> lineParams{"n",0,PROMPT,0,127};
   if (argc > 1) {
     std::string _prompt(argv[3]);
@@ -476,7 +489,7 @@ int main(int argc, char **argv) {
           exit = true;
       } else if (opt.substr(0,2) == "am") {
           try {
-            auto newAmp = std::stof(opt.substr(2,opt.size()-1));
+            auto newAmp = std::stof(opt.substr(2,opt.size()-1))*127;
             phrase = map([&](auto& _n){_n.second != 0 ? _n.second *= newAmp : _n.second = newAmp;});
           } catch (...) {
             std::cerr << "Invalid amplitude." << std::endl; 
@@ -508,6 +521,18 @@ int main(int argc, char **argv) {
           sync= true;
       } else if (opt == "o") {    
           sync= false;
+      } else if (opt.substr(0,3) == "mi") {    
+          try {
+            range.first = std::stof(opt.substr(3,opt.size()-1));
+          } catch (...) {
+            std::cerr << "Invalid range min value." << std::endl; 
+          }
+      } else if (opt.substr(0,3) == "ma") {    
+          try {
+            range.second = std::stof(opt.substr(3,opt.size()-1));
+          } catch (...) {
+            std::cerr << "Invalid range max value." << std::endl; 
+          }    
       } else if (opt.substr(0,2) == "lb") {    
           // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
           prompt = PROMPT;
@@ -519,7 +544,11 @@ int main(int argc, char **argv) {
       } else {
         // it's a phrase, if it's not a command
         phraseT tempPhrase{};
-        tempPhrase = parser.parsing(opt);
+
+        if (range.first != 0 || range.second != 127)
+          tempPhrase = parser.parsing(parser.rescaling(opt,range));
+        else       
+            tempPhrase = parser.parsing(opt);
     
         if (!tempPhrase.empty()) {
           phrase = tempPhrase;
