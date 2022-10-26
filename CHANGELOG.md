@@ -1,8 +1,12 @@
 ## 0.5
 
+. Set new range of values other then MIDI 0..127. Useful for CC.
+
+. `mi` and `ma` to set min and max of a new range of values
+
 . Set amplitude for each note and chord
 
-. `am`, master amplitude, is a % on notes and chords
+. `am`, master amplitude, is a % on notes and chords amplitudes, keeping relative amplitudes
 
 . `sa` and `xa`functions to scramble phrase amplitude
 
