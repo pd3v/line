@@ -548,7 +548,7 @@ int main(int argc, char **argv) {
         if (range.first != 0 || range.second != 127)
           tempPhrase = parser.parsing(parser.rescaling(opt,range));
         else       
-            tempPhrase = parser.parsing(opt);
+          tempPhrase = parser.parsing(opt);
     
         if (!tempPhrase.empty()) {
           phrase = tempPhrase;
