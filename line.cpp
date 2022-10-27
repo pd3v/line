@@ -77,14 +77,15 @@ public:
   }
 
   std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
-    auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) + "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
+    auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) +
+     "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
     
     if (luaL_dostring(L, parseRange.c_str()) == LUA_OK) {
       lua_getglobal(L,"rs");
       
       if (lua_isstring(L,-1))
         _phrase = lua_tostring(L,-1);
-    } 
+    }
     return _phrase;
   }
 
@@ -521,15 +522,15 @@ int main(int argc, char **argv) {
           sync= true;
       } else if (opt == "o") {    
           sync= false;
-      } else if (opt.substr(0,3) == "mi") {    
+      } else if (opt.substr(0,2) == "mi") {    
           try {
-            range.first = std::stof(opt.substr(3,opt.size()-1));
+            range.first = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
             std::cerr << "Invalid range min value." << std::endl; 
           }
-      } else if (opt.substr(0,3) == "ma") {    
+      } else if (opt.substr(0,2) == "ma") {    
           try {
-            range.second = std::stof(opt.substr(3,opt.size()-1));
+            range.second = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
             std::cerr << "Invalid range max value." << std::endl; 
           }    
@@ -544,7 +545,7 @@ int main(int argc, char **argv) {
       } else {
         // it's a phrase, if it's not a command
         phraseT tempPhrase{};
-
+        
         if (range.first != 0 || range.second != 127)
           tempPhrase = parser.parsing(parser.rescaling(opt,range));
         else       
