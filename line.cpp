@@ -35,7 +35,7 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5";
+const std::string VERSION = "0.4.2";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t OFF_SYNC_DUR = 100; // milliseconds
@@ -322,7 +322,7 @@ phraseT xscrambleAmp() {
 std::string prompt = PROMPT;
 
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
-  // line args order: notes/cc ch label range min range max
+  // line args order: notes/cc ch label range_min range_max
   std::tuple<bool,uint8_t,const char*,float,float> lineParams{"n",0,PROMPT,0,127};
   if (argc > 1) {
     std::string _prompt(argv[3]);
@@ -331,13 +331,13 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
     
     if (argc == 6) {
       try {
-        lineParams = {notesOrCC,std::stoi(argv[2],nullptr)-1,strcpy(new char[_prompt.length()+1],_prompt.c_str()),std::stoi(argv[4],nullptr),std::stoi(argv[5],nullptr)};
+        lineParams = {notesOrCC,std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),std::stoi(argv[4],nullptr),std::stoi(argv[5],nullptr)};
       } catch(const std::exception& _err) {
           std::cerr << "Invalid n/cc/min/max value(s)." << std::endl;
       }
     } else if (argc == 4) {
       try {
-        lineParams = {notesOrCC,std::stoi(argv[2],nullptr)-1,strcpy(new char[_prompt.length()+1],_prompt.c_str()),0,127};
+        lineParams = {notesOrCC,std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),0,127};
       } catch(const std::exception& _err) {
           std::cerr << "Invalid n/cc value(s)." << std::endl;
       }
@@ -357,9 +357,8 @@ int main(int argc, char **argv) {
   std::vector<uint8_t> noteMessage;
 
   bool rNotes;
-  uint8_t ch,ccCh,tempCh;
-  float rangeMin,rangeMax;
-  std::tie(rNotes,tempCh,prompt,rangeMin,rangeMax) = lineParamsOnStart(argc,argv);
+  uint8_t ch=0,ccCh=0,tempCh;
+  std::tie(rNotes,tempCh,prompt,range.first,range.second) = lineParamsOnStart(argc,argv);
   if (rNotes) ch = tempCh; else ccCh = tempCh; // ouch!
   
   bool sync = false;
@@ -459,7 +458,7 @@ int main(int argc, char **argv) {
         displayOptionsMenu(opt);
       } else if (opt.substr(0,2) == "ch") {
           try {
-            ch = std::abs(std::stoi(opt.substr(2,opt.size()-1))-1);
+            ch = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
           }
           catch (...) {
             std::cerr << "Invalid channel." << std::endl; 
@@ -470,7 +469,7 @@ int main(int argc, char **argv) {
           phrase.push_back({{{REST_VAL,0}}});
       } else if (opt.substr(0,2) == "cc") {
           try {
-            ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1))-1);
+            ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
             rNotes = false;
           }
           catch (...) {
