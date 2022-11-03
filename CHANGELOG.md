@@ -1,4 +1,7 @@
-## 0.5
+
+## 0.4
+
+. Start line using arguments, to set n/cc, channel/cc value, re-label prompt and input values range
 
 . Set new range of values other than MIDI 0..127. Useful for CC.
 
@@ -9,12 +12,6 @@
 . `am`, master amplitude, is a % on notes and chords amplitudes, keeping relative amplitudes
 
 . `sa` and `xa`functions to scramble phrase amplitude
-
-____
-
-## 0.4
-
-. Start line using arguments, to set n/cc, channel/cc value, re-label prompt and input values range
 
 ____
 
