@@ -35,10 +35,10 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.2";
+const std::string VERSION = "0.4.3";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
-const uint8_t OFF_SYNC_DUR = 100; // milliseconds
+const uint8_t CTRL_RATE = 100; // milliseconds
 
 const long iterDur = 5; // milliseconds
 float amplitude = 127;
@@ -397,16 +397,16 @@ int main(int argc, char **argv) {
         _rNotes = rNotes;
                 
         if (_rNotes) {
-            for (auto& _subPhrase : _phrase) {
-              for (auto& _subsubPhrase : _subPhrase) {
-                for (auto& notes : _subsubPhrase) {
+            for (auto& subPhrase : _phrase) {
+              for (auto& subsubPhrase : subPhrase) {
+                for (auto& notes : subsubPhrase) {
                   noteMessage[0] = 144+_ch;
                   noteMessage[1] = notes.first;
                   noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/_subPhrase.size())-iterDur)));
-                for (auto& notes : _subsubPhrase) {  
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
+                for (auto& notes : subsubPhrase) {  
                   noteMessage[0] = 128+_ch;
                   noteMessage[1] = notes.first;
                   noteMessage[2] = 0;
@@ -419,12 +419,11 @@ int main(int argc, char **argv) {
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
-                noteMessage[0] = 176+_ch;
-                noteMessage[1] = _ccCh;
-                noteMessage[2] = ccValues.first;
-                midiOut.sendMessage(&noteMessage);
+                  noteMessage[0] = 176+_ch;
+                  noteMessage[1] = _ccCh;
+                  noteMessage[2] = ccValues.first;
+                  midiOut.sendMessage(&noteMessage);
                 }
-              
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
               }
             }
@@ -432,12 +431,12 @@ int main(int argc, char **argv) {
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
-                noteMessage[0] = 176+_ch;
-                noteMessage[1] = _ccCh;
-                noteMessage[2] = ccValues.first;
-                midiOut.sendMessage(&noteMessage);
+                  noteMessage[0] = 176+_ch;
+                  noteMessage[1] = _ccCh;
+                  noteMessage[2] = ccValues.first;
+                  midiOut.sendMessage(&noteMessage);
               }
-                std::this_thread::sleep_for(std::chrono::milliseconds(OFF_SYNC_DUR));
+                std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
               }
             }
           }
