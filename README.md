@@ -5,7 +5,7 @@
 
 + 1 instrument or 1 CC
 
-<img src="https://github.com/pd3v/line/blob/develop/line0.5.png" style="width:60%;height:60%"/>
+<img src="https://github.com/pd3v/line/blob/develop/line0.4.3.png" style="width:60%;height:60%"/>
 
 <!-- ### Get *line* binaries -->
 
