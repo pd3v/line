@@ -435,7 +435,7 @@ int main(int argc, char **argv) {
                   noteMessage[1] = _ccCh;
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
-              }
+                } 
                 std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
               }
             }
