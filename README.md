@@ -67,7 +67,7 @@ In command-line, type and Enter:
 With *line* running, type:
 
 
-**To send a MIDI message:**
+**Send a MIDI message:**
 
 4 1/4 midi notes
 
@@ -85,45 +85,69 @@ C Major chord + C Major arpeggio. All 1/4
 
 `(c3 e3 g3) g5 e6 c2`
 
-**To set a MIDI channel:**  
+d note with 0.5 of amplitude
+
+`d3~.5`
+
+C Minor chord with 0.7 of amplitude
+
+`(c4 eb4 g4)~.7`
+
+*Note: amplitude is 1.0, by default*
+
+**Set a MIDI channel:**  
 
 channel 2
 
 `ch2`
 
-**To set bpm:**  
+**Set bpm:**  
 
 120 bpm
 
 `bpm120`
 
-**To set amplitude:**
+**Set a range of values (MIDI default):**
 
-amplitude 0.5
+minimum is 100
+
+`mi100`
+
+maximum is 1000
+
+`ma1000`
+
+**Set overall relative amplitude:**
+
+50% of previous overall amplitude
 
 `am0.5` or `am.5`
 
-**To mute and unmute:**
+**Mute and unmute:**
 
 `m` and `um`
 
-**To reverse:**  
+**Reverse:**  
 
 `r`
 
-**To scramble:**  
+**Scramble:**  
 
 scrambles notes within each rhythmic part and rhythmic structure
 
 `s`
 
-**To extra scramble:**  
+**Extra scramble:**  
 
-scrambles notes across the pattern and rhythmic structure
+scrambles notes across the phrases and rhythmic structure
 
 `x`
 
-**To load 3 last patterns :**  
+**Amplitude Scramble and Extra Scramble:**
+
+`sa` and `xa`
+
+**Load 3 last phrases:**  
 
 `l` or `l1`
 
@@ -131,33 +155,33 @@ scrambles notes across the pattern and rhythmic structure
 
 `l3`
 
-**To switch between notes and cc modes:**  
+**Switch between notes and cc modes:**  
 
 notes mode
 
 `n` 
 
-cc mode
+cc mode on channel 2
 
 `cc2`
 
-**To set cc sync lock/unlock:**  
+**Set cc sync:**  
 
-sync or unsync
+In-sync or Out-sync
 
 `i` or `o`
 
-**To rename prompt:** 
+**Relabel prompt:** 
 
-from default **line>** to **~my_synth>**, type:
+from default **line>** to **_my_synth>**, type:
 
 `lbmy_synth`
 
-**To exit:**
+**Exit:**
 
 `ex`  
 
-**To display commands menu/extended menu:**
+**Display commands menu/extended menu:**
 
 `ms` or `me`
 
