@@ -1,7 +1,7 @@
 
 ## 0.4.3
 
-. Start line using arguments, to set n/cc, channel/cc value, re-label prompt and input values range
+. Launch line using arguments, to set n/cc, channel, relabel prompt and input values range
 
 . Set new range of values other than MIDI 0..127. Useful for CC.
 
