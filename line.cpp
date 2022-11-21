@@ -196,7 +196,9 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..o         async cc  " << endl;
     cout << "..lb<[a|n]> label     " << endl;
     cout << "..sa        s amp     " << endl;
-    cout << "..xa        x amp    " << endl;
+    cout << "..xa        x amp     " << endl;
+    cout << "..mi<[n]>   range min" << endl;
+    cout << "..ma<[n]> range max" << endl;
   }
   cout << "----------------------" << endl;
   
@@ -361,7 +363,7 @@ int main(int argc, char **argv) {
   std::tie(rNotes,tempCh,prompt,range.first,range.second) = lineParamsOnStart(argc,argv);
   if (rNotes) ch = tempCh; else ccCh = tempCh; // ouch!
   
-  bool sync = false;
+  bool sync = true;
   std::deque<phraseT> last3Phrases{};
 
   std::string opt;
