@@ -6,7 +6,8 @@
 + 1 instrument or 1 CC
 
 <img src="https://github.com/pd3v/line/blob/develop/line 0.4.3 (7 running).png" style="width:60%;height:60%"/>
-<legend>7 instances of **line** running simultaneously. 1 synth. 6 cc.</legend>
+
+7 instances of **line** running simultaneously. 1 synth. 6 cc.
 
 <!-- ### Get *line* binaries -->
 
