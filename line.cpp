@@ -16,13 +16,15 @@
 #include <sstream>
 #include <stdlib.h>
 #include <algorithm> 
-
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <thread>
+#include "AudioPlatform_rtaudio.hpp"
 #include "externals/rtmidi/RtMidi.h"
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
 #endif
+
 extern "C" {
   #include "lua.h"
 	#include "lualib.h"
@@ -33,6 +35,7 @@ using noteAmpT = std::pair<uint8_t,uint8_t>;
 using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 
 const float DEFAULT_BPM = 60.0;
+const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
 const std::string VERSION = "0.4.3";
@@ -41,10 +44,43 @@ const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
 
 const long iterDur = 5; // milliseconds
+
+long barDur;
 float amplitude = 127;
 bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
+
+struct State {
+  std::atomic<bool> running;
+  ableton::Link link;
+  ableton::linkaudio::AudioPlatform audioPlatform;
+  
+  State()
+    : running(true)
+    , link(DEFAULT_BPM)
+    , audioPlatform(link)
+  {
+  }
+};
+
+void disableBufferedInput() {
+#if defined(LINK_PLATFORM_UNIX)
+  termios t;
+  tcgetattr(STDIN_FILENO, &t);
+  t.c_lflag &= static_cast<unsigned long>(~ICANON);
+  tcsetattr(STDIN_FILENO, TCSANOW, &t);
+#endif
+}
+
+void enableBufferedInput() {
+#if defined(LINK_PLATFORM_UNIX)
+  termios t;
+  tcgetattr(STDIN_FILENO, &t);
+  t.c_lflag |= ICANON;
+  tcsetattr(STDIN_FILENO, TCSANOW, &t);
+#endif
+}
 
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
@@ -60,6 +96,7 @@ public:
     textBuffer << input.rdbuf();
     parserCode = textBuffer.str();
   }
+
   ~Parser() {lua_close(L);};
 
   noteAmpT retreiveNoteAmp() {
@@ -202,7 +239,7 @@ void displayOptionsMenu(std::string menuVers="") {
   }
   cout << "----------------------" << endl;
   
-  if (rand()%10+1 == 1) cout << "          author:pd3v" << endl;
+  if (int r = rand()%5 == 1) cout << "          author:pd3v" << endl;
 }
 
 void amp(float _amplitude) {
@@ -348,13 +385,16 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
   return lineParams;
 }
 
+void bpmLink(double _bpm) {
+  barDur = bpm(_bpm,REF_BAR_DUR);
+}
+
 int main(int argc, char **argv) {
   Parser parser;
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
 
-  const uint16_t refBarDur = 4000; // milliseconds
-  long barDur = bpm(DEFAULT_BPM,refBarDur);
+  barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
   
   std::vector<uint8_t> noteMessage;
 
@@ -373,6 +413,16 @@ int main(int argc, char **argv) {
     
   bool soundingThread = false;
   bool exit = false;
+
+  bool syntaxError = false;
+
+  State state;
+  const auto tempo = state.link.captureAppSessionState().tempo();
+  auto& engine = state.audioPlatform.mEngine;
+  state.link.enable(!state.link.isEnabled());
+  state.link.setTempoCallback(bpmLink);
+
+  barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
     
   noteMessage.push_back(0);
   noteMessage.push_back(0);
@@ -389,14 +439,28 @@ int main(int argc, char **argv) {
     std::unique_lock<std::mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
     std::lock_guard<std::mutex> lckPhrase(mtxPhrase);
+
+    state.link.enable(true);
     
     while (soundingThread) {
+      const std::chrono::microseconds time = state.link.clock().micros();
+      const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
+      const auto beats = sessionState.beatAtTime(time, quantum);
+      const auto phase = sessionState.phaseAtTime(time, quantum);
+  
       if (!phrase.empty()) {
         partial = barDur/phrase.size();
         _phrase = phrase;
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
+
+        const std::chrono::microseconds time = state.link.clock().micros();
+        const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
+        const bool linkEnabled = state.link.isEnabled();
+        const std::size_t numPeers = state.link.numPeers();
+        const double quantum = state.audioPlatform.mEngine.quantum();
+        const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
                 
         if (_rNotes) {
             for (auto& subPhrase : _phrase) {
@@ -442,6 +506,30 @@ int main(int argc, char **argv) {
               }
             }
           }
+        } else
+            if (sync && phase >= 0.0 && phase <= 0.15)  {
+              for (auto& subPattern : _patt) {
+                for (auto& n : subPattern) {
+                  noteMessage[0] = 176+_ch;
+                  noteMessage[1] = _ccCh;
+                  noteMessage[2] = n;
+                  midiOut.sendMessage(&noteMessage);
+                
+                  std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((barDur/pattern.size()/subPattern.size())-iterTime)));
+                }
+              }
+            } else if (!sync) {
+              for (auto& subPattern : _patt) {
+                for (auto& n : subPattern) {
+                  noteMessage[0] = 176+_ch;
+                  noteMessage[1] = _ccCh;
+                  noteMessage[2] = n;
+                  midiOut.sendMessage(&noteMessage);
+                
+                  std::this_thread::sleep_for(std::chrono::milliseconds(OFF_SYNC_DUR));
+                }
+              }
+            } 
       } else break;
     }
     return "line is off.\n";
@@ -478,7 +566,8 @@ int main(int argc, char **argv) {
           }
       } else if (opt.substr(0,3) == "bpm") {
           try {
-            barDur = bpm(std::abs(std::stoi(opt.substr(3,opt.size()-1))),refBarDur);
+            barDur = bpm(std::abs(std::stoi(opt.substr(3,opt.size()-1))),REF_BAR_DUR);
+            engine.setTempo(std::abs(std::stoi(opt.substr(1,opt.size()-1))));
           } catch (...) {
             std::cerr << "Invalid bpm." << std::endl;
           }
@@ -486,7 +575,7 @@ int main(int argc, char **argv) {
           phrase.clear();
           soundingThread = true;
           cv.notify_one();
-          std::cout << fut.get();
+          std::cout << sequencer.get();
           exit = true;
       } else if (opt.substr(0,2) == "am") {
           try {
