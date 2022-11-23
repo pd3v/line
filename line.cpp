@@ -21,6 +21,7 @@
 #include <thread>
 #include "AudioPlatform_rtaudio.hpp"
 #include "externals/rtmidi/RtMidi.h"
+
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
 #endif
@@ -45,8 +46,7 @@ const uint8_t CTRL_RATE = 100; // milliseconds
 
 const long iterDur = 5; // milliseconds
 
-long barDur;
-float amplitude = 127;
+float amplitude = 127.;
 bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
@@ -56,12 +56,7 @@ struct State {
   ableton::Link link;
   ableton::linkaudio::AudioPlatform audioPlatform;
   
-  State()
-    : running(true)
-    , link(DEFAULT_BPM)
-    , audioPlatform(link)
-  {
-  }
+  State(): running(true),link(DEFAULT_BPM),audioPlatform(link){}
 };
 
 void disableBufferedInput() {
@@ -202,10 +197,6 @@ public:
     return v;
   }
 };
-
-const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
-  return DEFAULT_BPM/bpm*barDur;
-}
 
 void displayOptionsMenu(std::string menuVers="") {
   using namespace std;
@@ -357,6 +348,16 @@ phraseT xscrambleAmp() {
 
   return _phrase;
 }
+
+const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
+  return DEFAULT_BPM/bpm*barDur;
+}
+
+long barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
+
+void bpmLink(double _bpm) {
+  barDur = bpm(_bpm,REF_BAR_DUR);
+}
  
 std::string prompt = PROMPT;
 
@@ -372,40 +373,31 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
       try {
         lineParams = {notesOrCC,std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),std::stoi(argv[4],nullptr),std::stoi(argv[5],nullptr)};
       } catch(const std::exception& _err) {
-          std::cerr << "Invalid n/cc/min/max value(s)." << std::endl;
+          std::cerr << "Invalid n/cc/min/max." << std::endl;
       }
     } else if (argc == 4) {
       try {
         lineParams = {notesOrCC,std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),0,127};
       } catch(const std::exception& _err) {
-          std::cerr << "Invalid n/cc value(s)." << std::endl;
+          std::cerr << "Invalid n/cc." << std::endl;
       }
     }
   }
   return lineParams;
 }
 
-void bpmLink(double _bpm) {
-  barDur = bpm(_bpm,REF_BAR_DUR);
-}
-
 int main(int argc, char **argv) {
   Parser parser;
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
-
-  barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
   
   std::vector<uint8_t> noteMessage;
-
   bool rNotes;
   uint8_t ch=0,ccCh=0,tempCh;
   std::tie(rNotes,tempCh,prompt,range.first,range.second) = lineParamsOnStart(argc,argv);
   if (rNotes) ch = tempCh; else ccCh = tempCh; // ouch!
-  
   bool sync = true;
   std::deque<phraseT> last3Phrases{};
-
   std::string opt;
   
   std::mutex mtxWait, mtxPhrase;
@@ -413,7 +405,6 @@ int main(int argc, char **argv) {
     
   bool soundingThread = false;
   bool exit = false;
-
   bool syntaxError = false;
 
   State state;
@@ -428,13 +419,20 @@ int main(int argc, char **argv) {
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   
-  auto fut = async(std::launch::async, [&](){
+  auto sequencer = async(std::launch::async, [&](){
     unsigned long partial = 0;
     phraseT _phrase{};
     uint8_t _ch = ch;
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
-    
+
+    const std::chrono::microseconds time = state.link.clock().micros();
+    const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
+    const bool linkEnabled = state.link.isEnabled();
+    const std::size_t numPeers = state.link.numPeers();
+    const double quantum = state.audioPlatform.mEngine.quantum();
+    const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
+
     // waiting for live coder's first phrase 
     std::unique_lock<std::mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
@@ -455,14 +453,8 @@ int main(int argc, char **argv) {
         _ccCh = ccCh;
         _rNotes = rNotes;
 
-        const std::chrono::microseconds time = state.link.clock().micros();
-        const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
-        const bool linkEnabled = state.link.isEnabled();
-        const std::size_t numPeers = state.link.numPeers();
-        const double quantum = state.audioPlatform.mEngine.quantum();
-        const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
-                
         if (_rNotes) {
+          if (phase >= 0.0 && phase < 0.15)  { 
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& notes : subsubPhrase) {
@@ -480,8 +472,9 @@ int main(int argc, char **argv) {
                 }
               }
             }
+          }
         } else
-          if (sync)  {
+          if (sync && phase >= 0.0 && phase < 0.15) {
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
@@ -493,7 +486,7 @@ int main(int argc, char **argv) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
               }
             }
-          } else {
+          } else if (!sync) {
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
@@ -506,30 +499,6 @@ int main(int argc, char **argv) {
               }
             }
           }
-        } else
-            if (sync && phase >= 0.0 && phase <= 0.15)  {
-              for (auto& subPattern : _patt) {
-                for (auto& n : subPattern) {
-                  noteMessage[0] = 176+_ch;
-                  noteMessage[1] = _ccCh;
-                  noteMessage[2] = n;
-                  midiOut.sendMessage(&noteMessage);
-                
-                  std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((barDur/pattern.size()/subPattern.size())-iterTime)));
-                }
-              }
-            } else if (!sync) {
-              for (auto& subPattern : _patt) {
-                for (auto& n : subPattern) {
-                  noteMessage[0] = 176+_ch;
-                  noteMessage[1] = _ccCh;
-                  noteMessage[2] = n;
-                  midiOut.sendMessage(&noteMessage);
-                
-                  std::this_thread::sleep_for(std::chrono::milliseconds(OFF_SYNC_DUR));
-                }
-              }
-            } 
       } else break;
     }
     return "line is off.\n";
@@ -566,8 +535,7 @@ int main(int argc, char **argv) {
           }
       } else if (opt.substr(0,3) == "bpm") {
           try {
-            barDur = bpm(std::abs(std::stoi(opt.substr(3,opt.size()-1))),REF_BAR_DUR);
-            engine.setTempo(std::abs(std::stoi(opt.substr(1,opt.size()-1))));
+            engine.setTempo(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
           } catch (...) {
             std::cerr << "Invalid bpm." << std::endl;
           }
@@ -615,13 +583,13 @@ int main(int argc, char **argv) {
           try {
             range.first = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
-            std::cerr << "Invalid range min value." << std::endl; 
+            std::cerr << "Invalid range min." << std::endl; 
           }
       } else if (opt.substr(0,2) == "ma") {    
           try {
             range.second = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
-            std::cerr << "Invalid range max value." << std::endl; 
+            std::cerr << "Invalid range max." << std::endl; 
           }    
       } else if (opt.substr(0,2) == "lb") {    
           // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>

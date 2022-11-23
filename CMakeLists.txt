@@ -39,7 +39,7 @@ target_include_directories(
   ${PROJECT_NAME} PUBLIC
   ${LUA_INCLUDE_DIR}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/
+  # PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtaudio/include/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/include/ableton/
 )
@@ -47,7 +47,7 @@ target_include_directories(
 target_link_directories(
   ${PROJECT_NAME}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/
+  # PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtaudio/
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/src/ableton/link/
 )
