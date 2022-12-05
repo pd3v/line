@@ -45,7 +45,8 @@ AudioPlatform::~AudioPlatform() {
 }
 
 //RtAudio
-int AudioPlatform::audioCallback( void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,double streamTime, RtAudioStreamStatus statusFlags, void *userData ) {
+int AudioPlatform::audioCallback(void *outputBuffer,void* /**inputBuffer*/,unsigned int nBufferFrames,double streamTime,
+  RtAudioStreamStatus /*statusFlags*/,void *userData) {
   using namespace std::chrono;
   float* buffer = static_cast<float*>(outputBuffer);
   AudioPlatform& platform = *static_cast<AudioPlatform*>(userData);
@@ -56,11 +57,9 @@ int AudioPlatform::audioCallback( void *outputBuffer, void *inputBuffer, unsigne
   platform.mSampleTime += static_cast<double>(nBufferFrames);
 
   const auto bufferBeginAtOutput = hostTime + engine.mOutputLatency.load();
-
   engine.audioCallback(bufferBeginAtOutput, nBufferFrames);
 
-  for (unsigned long i = 0; i < nBufferFrames; ++i)
-  {
+  for (unsigned long i = 0; i < nBufferFrames; ++i) {
     buffer[i * 2] = static_cast<float>(engine.mBuffer[i]);
     buffer[i * 2 + 1] = static_cast<float>(engine.mBuffer[i]);
   }
@@ -69,7 +68,9 @@ int AudioPlatform::audioCallback( void *outputBuffer, void *inputBuffer, unsigne
 }
 
 void AudioPlatform::initialize() {
-  if ( dac.getDeviceCount() == 0 ) exit( 0 );
+  using namespace std::chrono;
+  
+  if (dac.getDeviceCount() == 0) exit(0);
   RtAudio::StreamParameters parameters;
   parameters.deviceId = dac.getDefaultOutputDevice();
   parameters.nChannels = 2;
@@ -77,13 +78,18 @@ void AudioPlatform::initialize() {
   unsigned int bufferFrames = mEngine.mBuffer.size(); // 256 sample frames
   RtAudio::StreamOptions options;
   options.flags = RTAUDIO_NONINTERLEAVED;
+
   try {
     dac.openStream(&parameters, NULL, RTAUDIO_FLOAT32,
                     sampleRate, &bufferFrames, &audioCallback, this, &options, NULL/*&errorCallback*/);
+    
+    const double streamLatency = static_cast<double>(dac.getStreamLatency())/mEngine.mSampleRate;
+    mEngine.outputLatency = streamLatency*1.0e6;
+    mEngine.mOutputLatency.store(duration_cast<microseconds>(duration<double>{streamLatency*1.0e6}));
   }
-  catch ( RtAudioError& e ) {
+  catch (RtAudioError& e) {
     std::cout << '\n' << e.getMessage() << '\n' << std::endl;
-    exit( 0 );
+    exit(0);
   }
 }
 
@@ -115,7 +121,6 @@ void AudioPlatform::start() {
     exit(0);
   }
 }
-
 
 void AudioPlatform::stop() {
   try {
