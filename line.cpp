@@ -46,6 +46,7 @@ const uint8_t CTRL_RATE = 100; // milliseconds
 
 const long iterDur = 5; // milliseconds
 
+uint8_t bpm = DEFAULT_BPM;
 float amplitude = 127.;
 bool muted = false;
 std::pair<float,float> range{0,127};
@@ -257,13 +258,15 @@ inline phraseT map(std::function<void(noteAmpT&)> f) {
 }
 
 phraseT reverse(phraseT _phrase) {
+  std::reverse(_phrase.begin(),_phrase.end());
+
   for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
     std::reverse(_subPhrase.begin(),_subPhrase.end());
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
       std::reverse(_subsubPhrase.begin(),_subsubPhrase.end());
     });
   });
-
+  
   return _phrase;
 }
 
@@ -349,14 +352,14 @@ phraseT xscrambleAmp() {
   return _phrase;
 }
 
-const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
+const uint16_t barToMs(const int16_t bpm, const uint16_t barDur) {
   return DEFAULT_BPM/bpm*barDur;
 }
 
-long barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
+long barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
 
 void bpmLink(double _bpm) {
-  barDur = bpm(_bpm,REF_BAR_DUR);
+  barDur = barToMs(_bpm,REF_BAR_DUR);
 }
  
 std::string prompt = PROMPT;
@@ -413,25 +416,27 @@ int main(int argc, char **argv) {
   state.link.enable(!state.link.isEnabled());
   state.link.setTempoCallback(bpmLink);
 
-  barDur = bpm(DEFAULT_BPM,REF_BAR_DUR);
+  barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
     
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   
   auto sequencer = async(std::launch::async, [&](){
+    double toNextBar = 0;
     unsigned long partial = 0;
     phraseT _phrase{};
     uint8_t _ch = ch;
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
-
+      
     const std::chrono::microseconds time = state.link.clock().micros();
-    const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
+    // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
     const bool linkEnabled = state.link.isEnabled();
     const std::size_t numPeers = state.link.numPeers();
     const double quantum = state.audioPlatform.mEngine.quantum();
     const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
+    // const double late = state.audioPlatform.mEngine.outputLatency; // just a reminder of latency info available in engine
 
     // waiting for live coder's first phrase 
     std::unique_lock<std::mutex> lckWait(mtxWait);
@@ -445,16 +450,17 @@ int main(int argc, char **argv) {
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
       const auto beats = sessionState.beatAtTime(time, quantum);
       const auto phase = sessionState.phaseAtTime(time, quantum);
-  
+      
       if (!phrase.empty()) {
         partial = barDur/phrase.size();
+        toNextBar = ceil(quantum)-((pow(bpm,1.2)/bpm)*0.03); // :TODO A better aproach. Works on low lantencies
         _phrase = phrase;
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
 
         if (_rNotes) {
-          if (phase >= 0.0 && phase < 0.15)  { 
+          if (phase >= toNextBar)  { 
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& notes : subsubPhrase) {
@@ -474,7 +480,7 @@ int main(int argc, char **argv) {
             }
           }
         } else
-          if (sync && phase >= 0.0 && phase < 0.15) {
+          if (phase >= toNextBar) {
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
@@ -535,7 +541,9 @@ int main(int argc, char **argv) {
           }
       } else if (opt.substr(0,3) == "bpm") {
           try {
-            engine.setTempo(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
+            bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
+            // engine.setTempo(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
+            engine.setTempo(bpm);
           } catch (...) {
             std::cerr << "Invalid bpm." << std::endl;
           }
