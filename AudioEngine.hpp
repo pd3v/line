@@ -46,6 +46,10 @@ public:
   bool isStartStopSyncEnabled() const;
   void setStartStopSyncEnabled(bool enabled);
 
+  // --pd3v code
+  double outputLatency;
+  // pd3v code--
+
 private:
   struct EngineData
   {
