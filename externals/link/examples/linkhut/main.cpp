@@ -69,7 +69,7 @@ void enableBufferedInput()
 void clearLine()
 {
   std::cout << "   \r" << std::flush;
-  std::cout.fill('k');
+  std::cout.fill(' ');
 }
 
 void printHelp()
