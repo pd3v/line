@@ -229,6 +229,8 @@ inline phraseT map(std::function<void(noteAmpT&)> f) {
 }
 
 phraseT reverse(phraseT _phrase) {
+  std::reverse(_phrase.begin(),_phrase.end());
+  
   for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
     std::reverse(_subPhrase.begin(),_subPhrase.end());
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
