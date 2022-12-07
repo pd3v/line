@@ -35,7 +35,7 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.3";
+const std::string VERSION = "0.4.4";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -230,7 +230,7 @@ inline phraseT map(std::function<void(noteAmpT&)> f) {
 
 phraseT reverse(phraseT _phrase) {
   std::reverse(_phrase.begin(),_phrase.end());
-  
+
   for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
     std::reverse(_subPhrase.begin(),_subPhrase.end());
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
