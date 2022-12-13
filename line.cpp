@@ -35,7 +35,7 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.4";
+const std::string VERSION = "0.4.5";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -51,18 +51,7 @@ class Parser {
   lua_State *L = luaL_newstate();
   std::string parserCode;
 
-public:
-  Parser()  {
-    luaL_openlibs(L);
-    const std::string parserFile = "../lineparser.lua";
-    std::ostringstream textBuffer;
-    std::ifstream input (parserFile.c_str());
-    textBuffer << input.rdbuf();
-    parserCode = textBuffer.str();
-  }
-  ~Parser() {lua_close(L);};
-
-  noteAmpT retreiveNoteAmp() {
+  noteAmpT retreiveNoteAmp() const {
     lua_next(L,-2);      
     lua_pushnil(L);
 
@@ -76,6 +65,17 @@ public:
     return {note,amp};
   }
 
+public:
+  Parser()  {
+    luaL_openlibs(L);
+    const std::string parserFile = "../lineparser.lua";
+    std::ostringstream textBuffer;
+    std::ifstream input (parserFile.c_str());
+    textBuffer << input.rdbuf();
+    parserCode = textBuffer.str();
+  }
+  ~Parser() {lua_close(L);};
+  
   std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
     auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) +
      "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
