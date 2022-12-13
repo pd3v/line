@@ -35,7 +35,7 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.6";
+const std::string VERSION = "0.4.7";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -337,13 +337,13 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
       try {
         lineParams = {notesOrCC,std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),std::stoi(argv[4],nullptr),std::stoi(argv[5],nullptr)};
       } catch(const std::exception& _err) {
-          std::cerr << "Invalid n/cc/min/max value(s)." << std::endl;
+          std::cerr << "Invalid n/cc/min/max." << std::endl;
       }
     } else if (argc == 4) {
       try {
         lineParams = {notesOrCC,std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),0,127};
       } catch(const std::exception& _err) {
-          std::cerr << "Invalid n/cc value(s)." << std::endl;
+          std::cerr << "Invalid n/cc." << std::endl;
       }
     }
   }
