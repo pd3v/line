@@ -83,18 +83,6 @@ class Parser {
   lua_State *L = luaL_newstate();
   std::string parserCode;
 
-public:
-  Parser()  {
-    luaL_openlibs(L);
-    const std::string parserFile = "../lineparser.lua";
-    std::ostringstream textBuffer;
-    std::ifstream input (parserFile.c_str());
-    textBuffer << input.rdbuf();
-    parserCode = textBuffer.str();
-  }
-
-  ~Parser() {lua_close(L);};
-
   noteAmpT retreiveNoteAmp() {
     lua_next(L,-2);      
     lua_pushnil(L);
@@ -108,6 +96,18 @@ public:
     lua_pop(L,1);
     return {note,amp};
   }
+
+public:
+  Parser()  {
+    luaL_openlibs(L);
+    const std::string parserFile = "../lineparser.lua";
+    std::ostringstream textBuffer;
+    std::ifstream input (parserFile.c_str());
+    textBuffer << input.rdbuf();
+    parserCode = textBuffer.str();
+  }
+
+  ~Parser() {lua_close(L);};
 
   std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
     auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) +
