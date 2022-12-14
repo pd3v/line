@@ -39,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.2";
+const std::string VERSION = "0.5.3";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -367,10 +367,11 @@ std::string prompt = PROMPT;
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
   // line args order: notes/cc ch label range_min range_max
   std::tuple<bool,uint8_t,const char*,float,float> lineParams{"n",0,PROMPT,0,127};
-  if (argc > 1) {
+  auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
+
+  if (argc > 3) {
     std::string _prompt(argv[3]);
     _prompt = PREPEND_CUSTOM_PROMPT+_prompt+">";
-    auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
     
     if (argc == 6) {
       try {
@@ -385,7 +386,10 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
           std::cerr << "Invalid n/cc." << std::endl;
       }
     }
+  } else if (argc == 3) {
+      std::get<1>(lineParams) = std::stoi(argv[2],nullptr);
   }
+
   return lineParams;
 }
 
