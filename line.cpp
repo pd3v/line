@@ -366,10 +366,10 @@ std::string prompt = PROMPT;
 
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
   // line args order: notes/cc ch label range_min range_max
-  std::tuple<bool,uint8_t,const char*,float,float> lineParams{"n",0,PROMPT,0,127};
-  auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
+  std::tuple<bool,uint8_t,const char*,float,float> lineParams{true,0,PROMPT,0,127};
 
   if (argc > 3) {
+    auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
     std::string _prompt(argv[3]);
     _prompt = PREPEND_CUSTOM_PROMPT+_prompt+">";
     
@@ -387,6 +387,8 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
       }
     }
   } else if (argc == 3) {
+      auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
+      std::get<0>(lineParams) = notesOrCC;
       std::get<1>(lineParams) = std::stoi(argv[2],nullptr);
   }
 
