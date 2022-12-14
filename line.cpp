@@ -39,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5";
+const std::string VERSION = "0.5.2";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -234,7 +234,7 @@ void displayOptionsMenu(std::string menuVers="") {
   if (int r = rand()%5 == 1) cout << "          author:pd3v" << endl;
 }
 
-void amp(float _amplitude) {
+void amp(float& _amplitude) {
   amplitude = 127*_amplitude;
 }
 
