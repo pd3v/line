@@ -35,7 +35,7 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.8";
+const std::string VERSION = "0.4.9";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -327,12 +327,12 @@ std::string prompt = PROMPT;
 
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
   // line args order: notes/cc ch label range_min range_max
-  std::tuple<bool,uint8_t,const char*,float,float> lineParams{"n",0,PROMPT,0,127};
-  auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
+  std::tuple<bool,uint8_t,const char*,float,float> lineParams{true,0,PROMPT,0,127};
 
   if (argc > 3) {
+    auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
     std::string _prompt(argv[3]);
-    _prompt = PREPEND_CUSTOM_PROMPT+_prompt+">";    
+    _prompt = PREPEND_CUSTOM_PROMPT+_prompt+">";
     
     if (argc == 6) {
       try {
@@ -348,6 +348,8 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
       }
     }
   } else if (argc == 3) {
+      auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
+      std::get<0>(lineParams) = notesOrCC;
       std::get<1>(lineParams) = std::stoi(argv[2],nullptr);
   }
 
