@@ -35,7 +35,7 @@ AudioPlatform::AudioPlatform(Link& link)
   , mSampleTime(0.)
 {
   mEngine.setSampleRate(44100.);
-  mEngine.setBufferSize(512);
+  mEngine.setBufferSize(256);
   initialize();
   start();
 }
@@ -45,7 +45,7 @@ AudioPlatform::~AudioPlatform() {
 }
 
 //RtAudio
-int AudioPlatform::audioCallback(void *outputBuffer,void* /**inputBuffer*/,unsigned int nBufferFrames,double streamTime,
+int AudioPlatform::audioCallback(void *outputBuffer,void* /**inputBuffer*/,unsigned int nBufferFrames,double /*streamTime*/,
   RtAudioStreamStatus /*statusFlags*/,void *userData) {
   using namespace std::chrono;
   float* buffer = static_cast<float*>(outputBuffer);
@@ -77,7 +77,6 @@ void AudioPlatform::initialize() {
   unsigned int sampleRate = mEngine.mSampleRate; //44100
   unsigned int bufferFrames = mEngine.mBuffer.size(); // 256 sample frames
   RtAudio::StreamOptions options;
-  options.flags = RTAUDIO_NONINTERLEAVED;
 
   try {
     dac.openStream(&parameters, NULL, RTAUDIO_FLOAT32,
@@ -85,7 +84,7 @@ void AudioPlatform::initialize() {
     
     const double streamLatency = static_cast<double>(dac.getStreamLatency())/mEngine.mSampleRate;
     mEngine.outputLatency = streamLatency*1.0e6;
-    mEngine.mOutputLatency.store(duration_cast<microseconds>(duration<double>{streamLatency*1.0e6}));
+    mEngine.mOutputLatency.store(microseconds(llround(streamLatency*1.0e6)));
   }
   catch (RtAudioError& e) {
     std::cout << '\n' << e.getMessage() << '\n' << std::endl;
