@@ -3,6 +3,7 @@
 //
 //  Created by @pd3v_
 //
+// #include "AudioPlatform.hpp"
 
 #include <iostream>
 #include <fstream>  
@@ -19,7 +20,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <thread>
-#include "AudioPlatform_rtaudio.hpp"
+// #include <math.h> 
+// #include "AudioPlatform_rtaudio.hpp"
+#include "externals/link/examples/linkaudio/AudioPlatform_CoreAudio.hpp"
 #include "externals/rtmidi/RtMidi.h"
 
 #if defined(LINK_PLATFORM_UNIX)
@@ -408,6 +411,7 @@ int main(int argc, char **argv) {
   bool sync = true;
   std::deque<phraseT> last3Phrases{};
   std::string opt;
+  float offlatency = 0;//((pow(bpm,1.2)/bpm)*0.01);
   
   std::mutex mtxWait, mtxPhrase;
   std::condition_variable cv;
@@ -435,6 +439,7 @@ int main(int argc, char **argv) {
     uint8_t _ch = ch;
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
+    long barStartTime, barElapsedTime = 0;double barDeltaTime = 0;
       
     const std::chrono::microseconds time = state.link.clock().micros();
     // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
@@ -456,62 +461,144 @@ int main(int argc, char **argv) {
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
       const auto beats = sessionState.beatAtTime(time, quantum);
       const auto phase = sessionState.phaseAtTime(time, quantum);
+      toNextBar = ceil(quantum)-((pow(bpm,1.2)/bpm)*0.01); // :TODO A better aproach. Works on low lantencies
+      // toNextBar = ceil(quantum);
+      // auto onlatency = (pow(bpm,0.3*(bpm/DEFAULT_BPM))/bpm);//*offlatency;
+      auto onlatency = pow(bpm,0.3*(bpm/DEFAULT_BPM))/bpm;//*offlatency;
+      // offlatency = 0;
+      // std::cout << " off:" << offlatency << " on:" << onlatency << std::flush;
+      
+       auto midi_processing = async(std::launch::async, [&](){
+        if (!phrase.empty()) {
+          partial = barDur/phrase.size();
+          // toNextBar = ceil(quantum)-((pow(bpm,1.2)/bpm)*0.03); // :TODO A better aproach. Works on low lantencies
+          _phrase = phrase;
+          _ch = ch;
+          _ccCh = ccCh;
+          _rNotes = rNotes;
+
+          if (_rNotes) {
+            if (phase >= toNextBar)  { 
+              for (auto& subPhrase : _phrase) {
+                for (auto& subsubPhrase : subPhrase) {
+                  for (auto& notes : subsubPhrase) {
+                    noteMessage[0] = 144+_ch;
+                    noteMessage[1] = notes.first;
+                    noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
+                    midiOut.sendMessage(&noteMessage);
+                  }
+                  std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
+                  for (auto& notes : subsubPhrase) {  
+                    noteMessage[0] = 128+_ch;
+                    noteMessage[1] = notes.first;
+                    noteMessage[2] = 0;
+                    midiOut.sendMessage(&noteMessage);
+                  }
+                }
+              }
+            }
+          } else
+            if (phase >= toNextBar) {
+              for (auto& subPhrase : _phrase) {
+                for (auto& subsubPhrase : subPhrase) {
+                  for (auto& ccValues : subsubPhrase) {
+                    noteMessage[0] = 176+_ch;
+                    noteMessage[1] = _ccCh;
+                    noteMessage[2] = ccValues.first;
+                    midiOut.sendMessage(&noteMessage);
+                  }
+                  std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
+                }
+              }
+            } else if (!sync) {
+              for (auto& subPhrase : _phrase) {
+                for (auto& subsubPhrase : subPhrase) {
+                  for (auto& ccValues : subsubPhrase) {
+                    noteMessage[0] = 176+_ch;
+                    noteMessage[1] = _ccCh;
+                    noteMessage[2] = ccValues.first;
+                    midiOut.sendMessage(&noteMessage);
+                  } 
+                  std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
+                }
+              }
+            }
+        } //else break;
+      });
+      
+      /*
+      bool isOn = false;
       
       if (!phrase.empty()) {
-        partial = barDur/phrase.size();
-        toNextBar = ceil(quantum)-((pow(bpm,1.2)/bpm)*0.03); // :TODO A better aproach. Works on low lantencies
-        _phrase = phrase;
-        _ch = ch;
-        _ccCh = ccCh;
-        _rNotes = rNotes;
+        if (0. <= phase && !isOn) {
+          isOn = true;
+        // if (phase >= ceil(quantum)-(onlatency) && phase < ceil(quantum)) {
+          // barStartTime = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+          auto midi_processing = async(std::launch::async, [&](){
+            // std::cout << "oh!" << std::flush;
+            partial = barDur/phrase.size();
+            //toNextBar = ceil(quantum)-((pow(bpm,1.2)/bpm)*0.03); // :TODO A better aproach. Works on low lantencies
+            _phrase = phrase;
+            _ch = ch;
+            _ccCh = ccCh;
+            _rNotes = rNotes;
 
-        if (_rNotes) {
-          if (phase >= toNextBar)  { 
-            for (auto& subPhrase : _phrase) {
-              for (auto& subsubPhrase : subPhrase) {
-                for (auto& notes : subsubPhrase) {
-                  noteMessage[0] = 144+_ch;
-                  noteMessage[1] = notes.first;
-                  noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
-                  midiOut.sendMessage(&noteMessage);
+            if (_rNotes) {
+              // if (phase >= toNextBar)  { 
+                for (auto& subPhrase : _phrase) {
+                  for (auto& subsubPhrase : subPhrase) {
+                    for (auto& notes : subsubPhrase) {
+                      noteMessage[0] = 144+_ch;
+                      noteMessage[1] = notes.first;
+                      noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
+                      midiOut.sendMessage(&noteMessage);
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
+                    for (auto& notes : subsubPhrase) {  
+                      noteMessage[0] = 128+_ch;
+                      noteMessage[1] = notes.first;
+                      noteMessage[2] = 0;
+                      midiOut.sendMessage(&noteMessage);
+                    }
+                  }
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
-                for (auto& notes : subsubPhrase) {  
-                  noteMessage[0] = 128+_ch;
-                  noteMessage[1] = notes.first;
-                  noteMessage[2] = 0;
-                  midiOut.sendMessage(&noteMessage);
+              // }
+            } else
+              if (sync) {
+                for (auto& subPhrase : _phrase) {
+                  for (auto& subsubPhrase : subPhrase) {
+                    for (auto& ccValues : subsubPhrase) {
+                      noteMessage[0] = 176+_ch;
+                      noteMessage[1] = _ccCh;
+                      noteMessage[2] = ccValues.first;
+                      midiOut.sendMessage(&noteMessage);
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
+                  }
                 }
-              }
-            }
-          }
-        } else
-          if (phase >= toNextBar) {
-            for (auto& subPhrase : _phrase) {
-              for (auto& subsubPhrase : subPhrase) {
-                for (auto& ccValues : subsubPhrase) {
-                  noteMessage[0] = 176+_ch;
-                  noteMessage[1] = _ccCh;
-                  noteMessage[2] = ccValues.first;
-                  midiOut.sendMessage(&noteMessage);
+              } else {
+                for (auto& subPhrase : _phrase) {
+                  for (auto& subsubPhrase : subPhrase) {
+                    for (auto& ccValues : subsubPhrase) {
+                      noteMessage[0] = 176+_ch;
+                      noteMessage[1] = _ccCh;
+                      noteMessage[2] = ccValues.first;
+                      midiOut.sendMessage(&noteMessage);
+                    } 
+                    std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
+                  }
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
-              }
-            }
-          } else if (!sync) {
-            for (auto& subPhrase : _phrase) {
-              for (auto& subsubPhrase : subPhrase) {
-                for (auto& ccValues : subsubPhrase) {
-                  noteMessage[0] = 176+_ch;
-                  noteMessage[1] = _ccCh;
-                  noteMessage[2] = ccValues.first;
-                  midiOut.sendMessage(&noteMessage);
-                } 
-                std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
-              }
-            }
-          }
-      } else break;
+              }  
+          });
+          // barElapsedTime = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+          // barDeltaTime = (barElapsedTime-barStartTime)*0.01;
+          // std::cout << barDeltaTime << " barElapsed:" << barElapsedTime << " barStart:" << barStartTime << std::flush;
+        }
+        isOn = false;
+      }     
+      else break;
+      */
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     return "line is off.\n";
   });
@@ -613,6 +700,12 @@ int main(int argc, char **argv) {
             std::string _prompt =  PROMPT;
             prompt = PREPEND_CUSTOM_PROMPT+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
           }
+      } else if (opt.substr(0,2) == "lt") {    
+        try {
+            offlatency = std::stof(opt.substr(2,opt.size()-1));
+          } catch (...) {
+            std::cerr << "Invalid off latency." << std::endl; 
+          }    
       } else {
         // it's a phrase, if it's not a command
         phraseT tempPhrase{};

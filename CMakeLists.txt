@@ -5,18 +5,25 @@ set (CMAKE_CXX_STANDARD 17)
 project(line VERSION 0.5.6)
 
 set(LIBRARY_OUTPUT_NAME ${PROJECT_NAME})
-
+    
 add_executable("${PROJECT_NAME}" line.cpp
-  AudioPlatform_rtaudio.hpp
-  AudioPlatform_rtaudio.cpp
-  AudioPlatform.hpp
-  AudioEngine.hpp
-  AudioEngine.cpp
+  # AudioPlatform_rtaudio.hpp
+  # AudioPlatform_rtaudio.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioPlatform_CoreAudio.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioPlatform_CoreAudio.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioPlatform.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioEngine.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioEngine.cpp
+  # AudioPlatform.hpp
+  # AudioEngine.hpp
+  # AudioEngine.cpp
 )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtaudio)
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtaudio)
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples)
 
+include_directories(linkaudio)
 include(${CMAKE_CURRENT_SOURCE_DIR}/externals/link/AbletonLinkConfig.cmake)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -39,24 +46,41 @@ target_include_directories(
   ${PROJECT_NAME} PUBLIC
   ${LUA_INCLUDE_DIR}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  # PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtaudio/include/
+  # PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtaudio/include/
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/include/ableton/
 )
 
 target_link_directories(
   ${PROJECT_NAME}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  # PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtaudio/
+  # PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtaudio/
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/src/ableton/link/
 )
 
+target_compile_definitions(${PROJECT_NAME} 
+  PRIVATE -DLINKHUT_AUDIO_PLATFORM_COREAUDIO=1
+)
+
+# target_link_libraries(
+#   ${PROJECT_NAME} "-framework AudioUnit"
+# )
+
 target_link_libraries(
-  ${PROJECT_NAME}
+  ${PROJECT_NAME} 
+  LINK_PRIVATE "-framework AudioUnit"
   LINK_PRIVATE rtmidi
   LINK_PUBLIC ${LUA_LIB_FILE}
   LINK_PRIVATE readline
-  LINK_PUBLIC rtaudio
+  # LINK_PUBLIC rtaudio
   Ableton::Link
 )
+
+
+# if(APPLE)
+#     target_link_libraries(${target} "-framework AudioUnit")
+#     target_compile_definitions(${target} PRIVATE
+#       -DLINKHUT_AUDIO_PLATFORM_COREAUDIO=1
+#     )
+# endif()
