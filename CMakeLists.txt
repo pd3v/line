@@ -9,8 +9,8 @@ set(LIBRARY_OUTPUT_NAME ${PROJECT_NAME})
 add_executable("${PROJECT_NAME}" line.cpp
   # AudioPlatform_rtaudio.hpp
   # AudioPlatform_rtaudio.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioPlatform_CoreAudio.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioPlatform_CoreAudio.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp
+  # ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioPlatform_Dummy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioPlatform.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioEngine.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/linkaudio/AudioEngine.cpp
@@ -60,7 +60,8 @@ target_link_directories(
 )
 
 target_compile_definitions(${PROJECT_NAME} 
-  PRIVATE -DLINKHUT_AUDIO_PLATFORM_COREAUDIO=1
+  # PRIVATE -DLINKHUT_AUDIO_PLATFORM_COREAUDIO=1
+  PRIVATE -DLINKHUT_AUDIO_PLATFORM_DUMMY=1
 )
 
 # target_link_libraries(
@@ -69,7 +70,7 @@ target_compile_definitions(${PROJECT_NAME}
 
 target_link_libraries(
   ${PROJECT_NAME} 
-  LINK_PRIVATE "-framework AudioUnit"
+  # LINK_PRIVATE "-framework AudioUnit"
   LINK_PRIVATE rtmidi
   LINK_PUBLIC ${LUA_LIB_FILE}
   LINK_PRIVATE readline

@@ -22,7 +22,8 @@
 #include <thread>
 // #include <math.h> 
 // #include "AudioPlatform_rtaudio.hpp"
-#include "externals/link/examples/linkaudio/AudioPlatform_CoreAudio.hpp"
+// #include "externals/link/examples/linkaudio/AudioPlatform_CoreAudio.hpp"
+#include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
 #include "externals/rtmidi/RtMidi.h"
 
 #if defined(LINK_PLATFORM_UNIX)
@@ -464,80 +465,21 @@ int main(int argc, char **argv) {
       toNextBar = ceil(quantum)-((pow(bpm,1.2)/bpm)*0.01); // :TODO A better aproach. Works on low lantencies
       // toNextBar = ceil(quantum);
       // auto onlatency = (pow(bpm,0.3*(bpm/DEFAULT_BPM))/bpm);//*offlatency;
-      auto onlatency = pow(bpm,0.3*(bpm/DEFAULT_BPM))/bpm;//*offlatency;
+      auto evalOffsetTime = pow(bpm,0.333*(bpm/DEFAULT_BPM))/bpm;//*offlatency;
       // offlatency = 0;
-      // std::cout << " off:" << offlatency << " on:" << onlatency << std::flush;
-      
-       auto midi_processing = async(std::launch::async, [&](){
-        if (!phrase.empty()) {
-          partial = barDur/phrase.size();
-          // toNextBar = ceil(quantum)-((pow(bpm,1.2)/bpm)*0.03); // :TODO A better aproach. Works on low lantencies
-          _phrase = phrase;
-          _ch = ch;
-          _ccCh = ccCh;
-          _rNotes = rNotes;
-
-          if (_rNotes) {
-            if (phase >= toNextBar)  { 
-              for (auto& subPhrase : _phrase) {
-                for (auto& subsubPhrase : subPhrase) {
-                  for (auto& notes : subsubPhrase) {
-                    noteMessage[0] = 144+_ch;
-                    noteMessage[1] = notes.first;
-                    noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
-                    midiOut.sendMessage(&noteMessage);
-                  }
-                  std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
-                  for (auto& notes : subsubPhrase) {  
-                    noteMessage[0] = 128+_ch;
-                    noteMessage[1] = notes.first;
-                    noteMessage[2] = 0;
-                    midiOut.sendMessage(&noteMessage);
-                  }
-                }
-              }
-            }
-          } else
-            if (phase >= toNextBar) {
-              for (auto& subPhrase : _phrase) {
-                for (auto& subsubPhrase : subPhrase) {
-                  for (auto& ccValues : subsubPhrase) {
-                    noteMessage[0] = 176+_ch;
-                    noteMessage[1] = _ccCh;
-                    noteMessage[2] = ccValues.first;
-                    midiOut.sendMessage(&noteMessage);
-                  }
-                  std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
-                }
-              }
-            } else if (!sync) {
-              for (auto& subPhrase : _phrase) {
-                for (auto& subsubPhrase : subPhrase) {
-                  for (auto& ccValues : subsubPhrase) {
-                    noteMessage[0] = 176+_ch;
-                    noteMessage[1] = _ccCh;
-                    noteMessage[2] = ccValues.first;
-                    midiOut.sendMessage(&noteMessage);
-                  } 
-                  std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
-                }
-              }
-            }
-        } //else break;
-      });
-      
-      /*
-      bool isOn = false;
+      // std::cout << " off:" << offlatency << " on:" << onlatency << std::flush;  
+      std::atomic<bool> isOn{false};
       
       if (!phrase.empty()) {
-        if (0. <= phase && !isOn) {
-          isOn = true;
-        // if (phase >= ceil(quantum)-(onlatency) && phase < ceil(quantum)) {
+        // if (0. <= phase /*&& !isOn*/) {
+        
+        if (phase >= ceil(quantum)-(evalOffsetTime) && phase < ceil(quantum) && !isOn.load()) {
+          isOn.store(true);
           // barStartTime = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
-          auto midi_processing = async(std::launch::async, [&](){
+          // auto midi_processing = async(std::launch::async, [&](){ 
             // std::cout << "oh!" << std::flush;
+            
             partial = barDur/phrase.size();
-            //toNextBar = ceil(quantum)-((pow(bpm,1.2)/bpm)*0.03); // :TODO A better aproach. Works on low lantencies
             _phrase = phrase;
             _ch = ch;
             _ccCh = ccCh;
@@ -553,7 +495,7 @@ int main(int argc, char **argv) {
                       noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                       midiOut.sendMessage(&noteMessage);
                     }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())*0.85-iterDur)));
                     for (auto& notes : subsubPhrase) {  
                       noteMessage[0] = 128+_ch;
                       noteMessage[1] = notes.first;
@@ -589,16 +531,20 @@ int main(int argc, char **argv) {
                   }
                 }
               }  
-          });
+          isOn.store(false);
+          // });
+          
           // barElapsedTime = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
           // barDeltaTime = (barElapsedTime-barStartTime)*0.01;
           // std::cout << barDeltaTime << " barElapsed:" << barElapsedTime << " barStart:" << barStartTime << std::flush;
+          
         }
-        isOn = false;
+        
+        //isOn = false;
       }     
       else break;
-      */
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     return "line is off.\n";
   });
