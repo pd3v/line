@@ -42,7 +42,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.6";
+const std::string VERSION = "0.5.7";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -411,7 +411,7 @@ int main(int argc, char **argv) {
   bool sync = true;
   std::deque<phraseT> last3Phrases{};
   std::string opt;
-  float offlatency = 0;//((pow(bpm,1.2)/bpm)*0.01);
+  float latency = 0;
   
   std::mutex mtxWait, mtxPhrase;
   std::condition_variable cv;
@@ -461,10 +461,9 @@ int main(int argc, char **argv) {
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
       const auto beats = sessionState.beatAtTime(time, quantum);
       const auto phase = sessionState.phaseAtTime(time, quantum);
-      toNextBar = ceil(quantum)-((pow(bpm,1.2)/bpm)*0.01); // :TODO A better aproach. Works on low lantencies
+      toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01)-latency; // :TODO A better aproach. Works on low lantencies
       
       if (!phrase.empty()) {
-        partial = barDur/phrase.size();
         _phrase = phrase;
         _ch = ch;
         _ccCh = ccCh;
@@ -480,7 +479,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(partial/subPhrase.size()-iterDur)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/phrase.size()/subPhrase.size()-iterDur)));
                 for (auto& notes : subsubPhrase) {  
                   noteMessage[0] = 128+_ch;
                   noteMessage[1] = notes.first;
@@ -620,9 +619,9 @@ int main(int argc, char **argv) {
           }
       } else if (opt.substr(0,2) == "lt") {    
         try {
-            offlatency = std::stof(opt.substr(2,opt.size()-1));
+            latency = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
-            std::cerr << "Invalid off latency." << std::endl; 
+            std::cerr << "Invalid latency." << std::endl; 
           }    
       } else {
         // it's a phrase, if it's not a command
