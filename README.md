@@ -7,7 +7,7 @@
 
 <img src="https://github.com/pd3v/line/blob/develop/line 0.4.3 (7 running).png" alt="7 instances of **line** running simultaneously. 1 synth. 6 cc." style="width:60%;height:60%"/>
 
-7 instances of **line** running simultaneously. 1 for notes. 6 cc.
+7 instances of **line** running simultaneously. 1 for notes, 6 cc. (Using tmux to split macOS terminal into 7 terminals)
 
 ---
 
