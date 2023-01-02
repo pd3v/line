@@ -191,5 +191,10 @@ from default **line>** to **_my_synth>**, type:
 
 `ms` or `me`
 
+**Set latency:**
+
+subtract 10 ms 
+
+`lt10`
 
  
