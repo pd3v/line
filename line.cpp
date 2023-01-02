@@ -461,7 +461,7 @@ int main(int argc, char **argv) {
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
       const auto beats = sessionState.beatAtTime(time, quantum);
       const auto phase = sessionState.phaseAtTime(time, quantum);
-      toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01)-latency; // :TODO A better aproach. Works on low lantencies
+      toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01)-(latency*0.001); // :TODO A better aproach. Works on low lantencies
       
       if (!phrase.empty()) {
         _phrase = phrase;
