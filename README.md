@@ -127,7 +127,7 @@ maximum is 1000
 
 50% of previous overall amplitude
 
-`am50
+`am50`
 
 **Mute and unmute:**
 
