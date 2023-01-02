@@ -35,7 +35,7 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.9";
+const std::string VERSION = "0.4.10";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -498,8 +498,8 @@ int main(int argc, char **argv) {
           exit = true;
       } else if (opt.substr(0,2) == "am") {
           try {
-            auto newAmp = std::stof(opt.substr(2,opt.size()-1))*127;
-            phrase = map([&](auto& _n){_n.second != 0 ? _n.second *= newAmp : _n.second = newAmp;});
+            auto newAmp = std::stof(opt.substr(2,opt.size()-1));
+            phrase = map([&](auto& _n){_n.second != 0 ? _n.second *= (newAmp*0.01) : _n.second = newAmp;});
           } catch (...) {
             std::cerr << "Invalid amplitude." << std::endl; 
           }
