@@ -107,7 +107,30 @@ public:
         size_t subtableSize,subsubtableSize;
         std::string musicStructType;
         int8_t note, amp;
-        
+
+        std::function<void()> ah = [&](){
+          lua_next(L,-2);      
+          lua_pushnil(L);
+          subtableSize = lua_rawlen(L,-2);
+
+          lua_next(L,-2);
+          musicStructType = lua_tostring(L,-1);
+          std::cout << musicStructType << std::flush;
+          // if (musicStructType != "n" && musicStructType != "c" && musicStructType != "s") return false;
+          
+          lua_pop(L,1);    
+
+          lua_next(L,-2);      
+          lua_pushnil(L);
+          subsubtableSize = lua_rawlen(L,-2);
+
+          // std::cout << "tab:" << tableSize << "sub:" << subtableSize << " subsub:" << subsubtableSize << " " << std::flush;
+
+          // return true;
+        };
+
+        std::cout << "tabsize:" << tableSize << std::flush;
+      
         for (int i=0; i<tableSize; ++i) {
           lua_next(L,-2);      
           lua_pushnil(L);
@@ -121,7 +144,12 @@ public:
           lua_pushnil(L);
           subsubtableSize = lua_rawlen(L,-2);
 
+          // std::cout << "type:" << musicStructType << " tab:" << tableSize << " sub:" << subtableSize << " subsub:" << subsubtableSize << " " << std::flush;
+          
+          //ah();
           if (musicStructType == "n") {
+            std::cout << " " << musicStructType << std::flush;
+            
             for (int i=0; i<subsubtableSize; ++i) {
               std::tie(note,amp) = retreiveNoteAmp();
 
@@ -131,32 +159,84 @@ public:
               subsubv.clear();
               subv.clear();
               lua_pop(L,2);
-            };
+            }
           } else if (musicStructType == "s") {
-              for (int i=0; i<subsubtableSize; ++i) {
-                std::tie(note,amp) = retreiveNoteAmp();
+              size_t _stabsize = lua_rawlen(L,-2);
+              std::cout << " stabsize:" << _stabsize << std::flush;
 
-                subsubv.push_back({note,amp});
-                subv.push_back(subsubv);  
-                subsubv.clear();
-                lua_pop(L,2);
+              for (int i=0; i<_stabsize; ++i) {
+              
+              lua_next(L,-2);      
+              lua_pushnil(L);
+              size_t _subtableSize = lua_rawlen(L,-2);
+              
+              lua_next(L,-2);
+              musicStructType = lua_tostring(L,-1);
+              lua_pop(L,1);    
+
+              lua_next(L,-2);      
+              lua_pushnil(L);
+              size_t _subsubtableSize = lua_rawlen(L,-2);
+              
+              // std::cout << "_type:" << musicStructType << " _tab:" << tableSize << " _sub:" << _subtableSize << " _subsub:" << _subsubtableSize << " " << std::flush;
+
+              // for (int i=0; i<2; ++i) {
+                if (musicStructType == "n") {
+                  std::cout << " s" << musicStructType << std::flush;
+                  
+                  for (int i=0; i<_subsubtableSize; ++i) {
+                    std::tie(note,amp) = retreiveNoteAmp();
+                    
+                    subsubv.push_back({note,amp});
+                    subv.push_back(subsubv);  
+                    subsubv.clear();
+                    lua_pop(L,2);
+                  }
+
+                  // v.push_back(subv);
+                  // subv.clear();
+                  // subsubv.clear();
+                }
+
+                if (musicStructType == "c") {
+                  std::cout << " s" << musicStructType << std::flush;
+                  
+                  for (int i=0; i<_subsubtableSize; ++i) {                
+                    std::tie(note,amp) = retreiveNoteAmp(); 
+
+                    subsubv.push_back({note,amp});
+                    lua_pop(L,2);
+                  }
+
+                  subv.push_back(subsubv);  
+                  subsubv.clear();
+                  // v.push_back(subv);
+                  // subsubv.clear();
+                  // subv.clear();
+                }
+              
+              lua_pop(L,2);
+              lua_pop(L,2);
               }
               v.push_back(subv);
-              subv.clear();
-              subsubv.clear();
+                  subv.clear();
+                  subsubv.clear();
           } else if (musicStructType == "c") {
+              std::cout << " " << musicStructType << std::flush;
+              
               for (int i=0; i<subsubtableSize; ++i) {                
                 std::tie(note,amp) = retreiveNoteAmp();
 
                 subsubv.push_back({note,amp});
                 lua_pop(L,2);
               }
+
               subv.push_back(subsubv);  
               v.push_back(subv);
               subsubv.clear();
               subv.clear();
           }
-      
+
           lua_pop(L,2);
           lua_pop(L,2);
         }    
