@@ -19,9 +19,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <thread>
-// #include <math.h> 
-// #include "AudioPlatform_rtaudio.hpp"
-// #include "externals/link/examples/linkaudio/AudioPlatform_CoreAudio.hpp"
 #include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
 #include "externals/rtmidi/RtMidi.h"
 
@@ -42,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.8";
+const std::string VERSION = "0.5.9";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -85,8 +82,10 @@ class Parser {
   std::string restSymbol = {REST_SYMBOL};
   lua_State *L = luaL_newstate();
   std::string parserCode;
+  size_t tableSize,subtableSize,subsubtableSize;
+  std::string musicStructType;
 
-  noteAmpT retreiveNoteAmp() {
+  noteAmpT retreiveNoteAmp() const {
     lua_next(L,-2);      
     lua_pushnil(L);
 
@@ -99,6 +98,20 @@ class Parser {
     lua_pop(L,1);
     return {note,amp};
   }
+  
+  void musicStructNumIter() {
+    lua_next(L,-2);      
+    lua_pushnil(L);
+    subtableSize = lua_rawlen(L,-2);
+
+    lua_next(L,-2);
+    musicStructType = lua_tostring(L,-1);
+    lua_pop(L,1);    
+
+    lua_next(L,-2);      
+    lua_pushnil(L);
+    subsubtableSize = lua_rawlen(L,-2);
+  }
 
 public:
   Parser()  {
@@ -109,9 +122,8 @@ public:
     textBuffer << input.rdbuf();
     parserCode = textBuffer.str();
   }
-
   ~Parser() {lua_close(L);};
-
+  
   std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
     auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) +
      "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
@@ -139,23 +151,11 @@ public:
       if (lua_istable(L,-1)) {
         lua_pushnil(L);
         lua_gettable(L,-2);
-        size_t tableSize = lua_rawlen(L,-2);
-        size_t subtableSize,subsubtableSize;
-        std::string musicStructType;
+        tableSize = lua_rawlen(L,-2);
         int8_t note, amp;
-        
+      
         for (int i=0; i<tableSize; ++i) {
-          lua_next(L,-2);      
-          lua_pushnil(L);
-          subtableSize = lua_rawlen(L,-2);
-
-          lua_next(L,-2);
-          musicStructType = lua_tostring(L,-1);
-          lua_pop(L,1);    
-
-          lua_next(L,-2);      
-          lua_pushnil(L);
-          subsubtableSize = lua_rawlen(L,-2);
+          musicStructNumIter();
 
           if (musicStructType == "n") {
             for (int i=0; i<subsubtableSize; ++i) {
@@ -167,16 +167,40 @@ public:
               subsubv.clear();
               subv.clear();
               lua_pop(L,2);
-            };
+            }
           } else if (musicStructType == "s") {
-              for (int i=0; i<subsubtableSize; ++i) {
-                std::tie(note,amp) = retreiveNoteAmp();
+              size_t _stabsize = lua_rawlen(L,-2);
+              
+              for (int i=0; i<_stabsize; ++i) {
+                musicStructNumIter();
 
-                subsubv.push_back({note,amp});
-                subv.push_back(subsubv);  
-                subsubv.clear();
+                if (musicStructType == "n") {
+                  for (int i=0; i<subsubtableSize; ++i) {
+                    std::tie(note,amp) = retreiveNoteAmp();
+                    
+                    subsubv.push_back({note,amp});
+                    subv.push_back(subsubv);  
+                    subsubv.clear();
+                    lua_pop(L,2);
+                  }
+                }
+
+                if (musicStructType == "c") {
+                  for (int i=0; i<subsubtableSize; ++i) {                
+                    std::tie(note,amp) = retreiveNoteAmp(); 
+
+                    subsubv.push_back({note,amp});
+                    lua_pop(L,2);
+                  }
+
+                  subv.push_back(subsubv);  
+                  subsubv.clear();
+                }
+              
+                lua_pop(L,2);
                 lua_pop(L,2);
               }
+
               v.push_back(subv);
               subv.clear();
               subsubv.clear();
@@ -187,12 +211,13 @@ public:
                 subsubv.push_back({note,amp});
                 lua_pop(L,2);
               }
+
               subv.push_back(subsubv);  
               v.push_back(subv);
               subsubv.clear();
               subv.clear();
           }
-      
+
           lua_pop(L,2);
           lua_pop(L,2);
         }    
@@ -237,8 +262,8 @@ void displayOptionsMenu(std::string menuVers="") {
   if (int r = rand()%5 == 1) cout << "          author:pd3v" << endl;
 }
 
-void amp(float& _amplitude) {
-  amplitude = 127*_amplitude;
+void amp(float& amplitude) {
+  amplitude = 127*amplitude;
 }
 
 void mute() {

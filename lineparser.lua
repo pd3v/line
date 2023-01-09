@@ -118,8 +118,8 @@ local cipher_bs_oct = lpeg.P(cipher * bs * oct)^1 / noteCipherToMidi
 local cipher_bs_oct_amp = lpeg.P((cipher * bs * oct) * (lpeg.S(AMP_SYMBOL) * (lpeg.P("0.") + lpeg.S("."))^0 * amp)^0)^1 / noteCipherToMidi
 
 local noteP = lpeg.Cg((- one_note_exclusions * (note_amp + cipher_bs_oct_amp + rest)^1 * (sep^1 * (note_amp + cipher_bs_oct_amp + rest))^0)^1) / addToNoteTable
-local subP = lpeg.Cg(("." * ((note_amp + cipher_bs_oct_amp + rest)^1 * (sep^1 * (note_amp + cipher_bs_oct_amp + rest))^0)^1 * ".")) / addToSubTable
 local chordP = lpeg.Cg(("(" * ((note_amp + cipher_bs_oct_amp + rest)^1 * (sep^1 * (note_amp + cipher_bs_oct_amp + rest))^0)^1 * ")" * chord_amp)) / addToChordTable
+local subP = lpeg.Cg(("." * ((noteP + chordP + rest)^1 * (sep^1 * (noteP + chordP + rest))^0)^1 * ".")) / addToSubTable
 
 local V = lpeg.V
 local phraseG = lpeg.P {"phrase",
