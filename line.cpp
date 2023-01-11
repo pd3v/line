@@ -39,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.9";
+const std::string VERSION = "0.5.10";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -51,6 +51,7 @@ float amplitude = 127.;
 bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
+std::string phraseStr;
 
 struct State {
   std::atomic<bool> running;
@@ -225,7 +226,7 @@ public:
     }
     return v;
   }
-};
+} parser;
 
 void displayOptionsMenu(std::string menuVers="") {
   using namespace std;
@@ -242,7 +243,6 @@ void displayOptionsMenu(std::string menuVers="") {
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
-  cout << "..l<[n]>    last patt " << endl;
   
   if (menuVers == "me") {
     cout << "..cc<[n]>   cc ch mode" << endl;
@@ -255,7 +255,11 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..sa        s amp     " << endl;
     cout << "..xa        x amp     " << endl;
     cout << "..mi<[n]>   range min" << endl;
-    cout << "..ma<[n]> range max" << endl;
+    cout << "..ma<[n]>   range max" << endl;
+    cout << "..sv        save phr @ 0" << endl;
+    cout << "..sv<[n]>   save phr @ n" << endl;
+    cout << "..ld<[n]>   load phr @ n" << endl;
+    cout << "..l         list sv phrs" << endl;
   }
   cout << "----------------------" << endl;
   
@@ -423,8 +427,23 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
   return lineParams;
 }
 
+void parsePhrase(std::string& _phrase) {
+  phraseT tempPhrase{};
+
+  phraseStr = _phrase;
+
+  if (range.first != 0 || range.second != 127)
+    tempPhrase = parser.parsing(parser.rescaling(_phrase,range));
+  else       
+    tempPhrase = parser.parsing(_phrase);
+
+  if (!tempPhrase.empty()) {
+    phrase = tempPhrase;
+    add_history(_phrase.c_str());
+  }
+}
+
 int main(int argc, char **argv) {
-  Parser parser;
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
   
@@ -434,7 +453,7 @@ int main(int argc, char **argv) {
   std::tie(rNotes,tempCh,prompt,range.first,range.second) = lineParamsOnStart(argc,argv);
   if (rNotes) ch = tempCh; else ccCh = tempCh; // ouch!
   bool sync = true;
-  std::deque<phraseT> last3Phrases{};
+  std::deque<std::string> prefPhrases{};
   std::string opt;
   float latency = 0;
   
@@ -549,7 +568,7 @@ int main(int argc, char **argv) {
 
   while (!exit) {
     opt = readline(prompt.c_str());
-
+    
     if (!opt.empty()) {
       if (opt == "ms") {
         displayOptionsMenu("");
@@ -609,15 +628,26 @@ int main(int argc, char **argv) {
           phrase = xscramble(phrase);
       } else if (opt == "xa") {    
           phrase = xscrambleAmp();
-      } else if (opt == "l" || opt == "l1") { 
-          if (!last3Phrases.empty()) phrase = last3Phrases.at(0); 
-          else std::cout << "Invalid phrase reference." << std::endl; 
-      } else if (opt == "l2") {    
-          if (last3Phrases.size() >= 2) phrase = last3Phrases.at(1);
-          else std::cout << "Invalid phrase reference." << std::endl; 
-      } else if (opt == "l3") {    
-          if (last3Phrases.size() == 3) phrase = last3Phrases.at(2);
-          else std::cout << "Invalid phrase reference." << std::endl; 
+      } else if (opt == "sv") {
+          prefPhrases.push_front(phraseStr);
+          if (prefPhrases.size() > 20) prefPhrases.pop_back();
+      } else if (opt.substr(0,2) == "sv") {
+          try {
+            prefPhrases.at(std::stof(opt.substr(2,opt.size()-1))) = phraseStr;
+          } catch (...) {
+            std::cerr << "Invalid phrase slot." << std::endl; 
+          }   
+      } else if (opt.substr(0,2) == "ld") {
+          try {
+            parsePhrase(prefPhrases.at(std::stof(opt.substr(2,opt.size()-1))));
+          } catch (...) {
+            std::cerr << "Invalid phrase slot." << std::endl; 
+          }
+      } else if (opt == "l") {
+        uint8_t i = 0;
+        for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _p) {
+          std::cout << "[" << (int)i++ << "] " << _p << std::endl;
+        });  
       } else if (opt == "i") {    
           sync= true;
       } else if (opt == "o") {    
@@ -649,26 +679,10 @@ int main(int argc, char **argv) {
             std::cerr << "Invalid latency." << std::endl; 
           }    
       } else {
-        // it's a phrase, if it's not a command
-        phraseT tempPhrase{};
-        
-        if (range.first != 0 || range.second != 127)
-          tempPhrase = parser.parsing(parser.rescaling(opt,range));
-        else       
-          tempPhrase = parser.parsing(opt);
-    
-        if (!tempPhrase.empty()) {
-          phrase = tempPhrase;
-          
-          add_history(opt.c_str());
-          tempPhrase.clear();
+        parsePhrase(opt);
 
-          soundingThread = true;
-          cv.notify_one();
-
-          last3Phrases.push_front(phrase);
-          if (last3Phrases.size() > 3) last3Phrases.pop_back();
-        }
+        soundingThread = true;
+        cv.notify_one();
       }
     }
   }

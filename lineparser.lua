@@ -59,7 +59,7 @@ function toNoteAmp(v)
   return result
 end
 
--- :FIX runs for every note in chord. should run one per chord.
+-- :FIX runs for every note in chord. should run once per chord.
 function toChordAmp(v)
   if string.find(v,AMP_SYMBOL) then
     chord,amp = splitNoteAmp(v,AMP_SYMBOL)
@@ -128,7 +128,6 @@ local phraseG = lpeg.P {"phrase",
   sub = subP;
   note = noteP;
 } * -1
-
 
 -- Phrases of different ranges other then MIDI 0-127
 function rescaleToMIDI(v)
