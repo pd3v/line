@@ -59,7 +59,7 @@ function toNoteAmp(v)
   return result
 end
 
--- :FIX runs for every note in chord. should run one per chord.
+-- :FIX runs for every note in chord. should run once per chord.
 function toChordAmp(v)
   if string.find(v,AMP_SYMBOL) then
     chord,amp = splitNoteAmp(v,AMP_SYMBOL)
