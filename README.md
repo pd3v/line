@@ -151,13 +151,25 @@ scrambles notes across the phrases and rhythmic structure
 
 `sa` and `xa`
 
-**Load 3 last phrases:**  
+**Save phrase to a queue:**
 
-`l` or `l1`
+place it on top of the queue; position 0
 
-`l2`
+`sv`
 
-`l3`
+replace phrase in position 3
+
+`sv3`
+
+**Load phrase:**  
+
+load postion 0 phrase; it will play next
+
+`ld0`
+
+**List saved phrases**
+
+`l`
 
 **Switch between notes and cc modes:**  
 
