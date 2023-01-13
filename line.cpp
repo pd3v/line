@@ -5,7 +5,7 @@
 //
 
 #include <iostream>
-#include <fstream>  
+#include <fstream>
 #include <string>
 #include <chrono>
 #include <future>
@@ -39,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.10";
+const std::string VERSION = "0.5.11";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -52,6 +52,7 @@ bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
 std::string phraseStr;
+std::string filenameDefault = "line";
 
 struct State {
   std::atomic<bool> running;
@@ -256,10 +257,12 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..xa        x amp     " << endl;
     cout << "..mi<[n]>   range min" << endl;
     cout << "..ma<[n]>   range max" << endl;
-    cout << "..sv        save phr @ 0" << endl;
-    cout << "..sv<[n]>   save phr @ n" << endl;
-    cout << "..ld<[n]>   load phr @ n" << endl;
-    cout << "..l         list sv phrs" << endl;
+    cout << "..sp        save phr @ 0" << endl;
+    cout << "..sp<[n]>   save phr @ n" << endl;
+    cout << "..lp<[n]>   load phr @ n" << endl;
+    cout << "..l         list sp phrs" << endl;
+    cout << "..sf<name>  save .line file" << endl;
+    cout << "..lf<name>  load .line file" << endl;
   }
   cout << "----------------------" << endl;
   
@@ -628,16 +631,16 @@ int main(int argc, char **argv) {
           phrase = xscramble(phrase);
       } else if (opt == "xa") {    
           phrase = xscrambleAmp();
-      } else if (opt == "sv") {
+       } else if (opt == "sp") {
           prefPhrases.push_front(phraseStr);
           if (prefPhrases.size() > 20) prefPhrases.pop_back();
-      } else if (opt.substr(0,2) == "sv") {
+      } else if (opt.substr(0,2) == "sp") {
           try {
             prefPhrases.at(std::stof(opt.substr(2,opt.size()-1))) = phraseStr;
           } catch (...) {
             std::cerr << "Invalid phrase slot." << std::endl; 
           }   
-      } else if (opt.substr(0,2) == "ld") {
+      } else if (opt.substr(0,2) == "lp") {
           try {
             parsePhrase(prefPhrases.at(std::stof(opt.substr(2,opt.size()-1))));
           } catch (...) {
@@ -671,6 +674,33 @@ int main(int argc, char **argv) {
           if (opt.length() > 2) {
             std::string _prompt =  PROMPT;
             prompt = PREPEND_CUSTOM_PROMPT+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
+            filenameDefault = opt.substr(2,opt.length()-1);
+          }
+      } else if (opt.substr(0,2) == "sf") {
+          try {
+            auto filename = opt.substr(2,opt.size()-1);
+            if (filename.empty()) filename = filenameDefault;
+            std::ofstream outfile (filename + ".line");
+            for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _phraseStr){outfile << _phraseStr << "\n";});
+            outfile.close();
+            std::cout << "File " + filename + " saved.\n";
+          } catch (...) {
+            std::cerr << "Invalid filename." << std::endl; 
+          }
+      } else if (opt.substr(0,2) == "lf") {
+          try {
+            auto filename = opt.substr(2,opt.size()-1);
+            if (filename.empty()) throw std::runtime_error("filename not set.");
+            std::ifstream file(filename + ".line");
+            if (file.is_open()) {
+              std::string _phrase;
+              while (std::getline(file, _phrase))
+                prefPhrases.push_back(_phrase.c_str());
+              file.close();
+            }
+            std::cout << "File loaded.\n";
+          } catch (...) {
+            std::cerr << "Couldn't load file." << std::endl; 
           }
       } else if (opt.substr(0,2) == "lt") {    
         try {
@@ -679,6 +709,7 @@ int main(int argc, char **argv) {
             std::cerr << "Invalid latency." << std::endl; 
           }    
       } else {
+        // it's a phrase, if it's not a command
         parsePhrase(opt);
 
         soundingThread = true;
