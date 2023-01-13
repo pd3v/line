@@ -35,7 +35,7 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 const float DEFAULT_BPM = 60.0;
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.13";
+const std::string VERSION = "0.4.14";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -229,10 +229,12 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..xa        x amp     " << endl;
     cout << "..mi<[n]>   range min" << endl;
     cout << "..ma<[n]>   range max" << endl;
-    cout << "..sv        save phr @ 0" << endl;
-    cout << "..sv<[n]>   save phr @ n" << endl;
-    cout << "..ld<[n]>   load phr @ n" << endl;
-    cout << "..l         list sv phrs" << endl;
+    cout << "..sp        save phr @ 0" << endl;
+    cout << "..sp<[n]>   save phr @ n" << endl;
+    cout << "..lp<[n]>   load phr @ n" << endl;
+    cout << "..l         list sp phrs" << endl;
+    cout << "..sf<name>  save .line file" << endl;
+    cout << "..lf<name>  load .line file" << endl;
   }
   cout << "----------------------" << endl;
   
@@ -566,16 +568,16 @@ int main(int argc, char **argv) {
           phrase = xscramble(phrase);
       } else if (opt == "xa") {    
           phrase = xscrambleAmp();
-       } else if (opt == "sv") {
+       } else if (opt == "sp") {
           prefPhrases.push_front(phraseStr);
           if (prefPhrases.size() > 20) prefPhrases.pop_back();
-      } else if (opt.substr(0,2) == "sv") {
+      } else if (opt.substr(0,2) == "sp") {
           try {
             prefPhrases.at(std::stof(opt.substr(2,opt.size()-1))) = phraseStr;
           } catch (...) {
             std::cerr << "Invalid phrase slot." << std::endl; 
           }   
-      } else if (opt.substr(0,2) == "ld") {
+      } else if (opt.substr(0,2) == "lp") {
           try {
             parsePhrase(prefPhrases.at(std::stof(opt.substr(2,opt.size()-1))));
           } catch (...) {
