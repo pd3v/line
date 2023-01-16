@@ -690,15 +690,15 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,2) == "lf") {
           try {
             auto filename = opt.substr(2,opt.size()-1);
-            if (filename.empty()) throw std::runtime_error("filename not set.");
+            if (filename.empty()) throw std::runtime_error("");
             std::ifstream file(filename + ".line");
             if (file.is_open()) {
               std::string _phrase;
               while (std::getline(file, _phrase))
                 prefPhrases.push_back(_phrase.c_str());
               file.close();
-            }
-            std::cout << "File loaded.\n";
+              std::cout << "File loaded.\n";
+            } else throw std::runtime_error("");
           } catch (...) {
             std::cerr << "Couldn't load file." << std::endl; 
           }
