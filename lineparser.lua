@@ -86,8 +86,7 @@ function noteCipherToMidi(cipher)
   local note,amp
   ciphers = { c = 0,cb = 11,cs = 1,d = 2,db = 1,ds = 3,
               e = 4,eb = 3,f = 5,fb = 4,fs = 6,gb = 6,
-              g = 7, gs = 8, ab = 8, a = 9, as = 10,
-              bb = 10,b = 11
+              g = 7,gs = 8,ab = 8,a = 9,as = 10,bb = 10,b = 11
             }
   
   if string.find(cipher,AMP_SYMBOL) then
@@ -96,9 +95,14 @@ function noteCipherToMidi(cipher)
     note = cipher
     amp = 1
   end
-
+  
   octave = string.sub(note,(#note > 1) and -1 or 1):match("^%-?%d+$")
-  cipher_to_midi = getValueForKey(ciphers,string.sub(note,1,(octave ~= nil) and -2 or 1))+(12*((octave ~= nil) and octave or 0))
+  if octave then 
+    note = string.sub(note,1,string.find(note,octave)-1)
+  end  
+
+  -- cipher_to_midi = getValueForKey(ciphers,string.sub(note,1,(octave ~= nil) and -2 or 1))+(12*((octave ~= nil) and octave or 0))
+  cipher_to_midi = getValueForKey(ciphers,note)+(12*((octave ~= nil) and octave or 0))
   
   return toNoteAmp(tostring(cipher_to_midi)..AMP_SYMBOL..tostring(amp))
 end
