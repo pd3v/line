@@ -579,7 +579,7 @@ int main(int argc, char **argv) {
           }   
       } else if (opt.substr(0,2) == "lp" || opt.substr(0,1) == ":") {
           try {
-            auto cmdLen = opt.substr(0,1) == ":" ? 1 : 2
+            auto cmdLen = opt.substr(0,1) == ":" ? 1 : 2;
             parsePhrase(prefPhrases.at(std::stof(opt.substr(cmdLen,opt.size()-1))));
           } catch (...) {
             std::cerr << "Invalid phrase slot." << std::endl; 
