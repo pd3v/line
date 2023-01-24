@@ -39,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.12";
+const std::string VERSION = "0.5.13";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -640,9 +640,10 @@ int main(int argc, char **argv) {
           } catch (...) {
             std::cerr << "Invalid phrase slot." << std::endl; 
           }   
-      } else if (opt.substr(0,2) == "lp") {
+      } else if (opt.substr(0,2) == "lp" || opt.substr(0,1) == ":") {
           try {
-            parsePhrase(prefPhrases.at(std::stof(opt.substr(2,opt.size()-1))));
+            auto cmdLen = opt.substr(0,1) == ":" ? 1 : 2;
+            parsePhrase(prefPhrases.at(std::stof(opt.substr(cmdLen,opt.size()-1))));
           } catch (...) {
             std::cerr << "Invalid phrase slot." << std::endl; 
           }
