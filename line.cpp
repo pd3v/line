@@ -39,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.17";
+const std::string VERSION = "0.4.18";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -257,9 +257,10 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..xa        x amp     " << endl;
     cout << "..mi<[n]>   range min" << endl;
     cout << "..ma<[n]>   range max" << endl;
+    cout << "..*<[n]>    concat phrs" << endl;
     cout << "..sp        save phr @ 0" << endl;
     cout << "..sp<[n]>   save phr @ n" << endl;
-    cout << "..lp<[n]>   load phr @ n" << endl;
+    cout << "..:<[n]>    load phr @ n" << endl;
     cout << "..l         list sp phrs" << endl;
     cout << "..sf<name>  save .line file" << endl;
     cout << "..lf<name>  load .line file" << endl;
@@ -681,7 +682,7 @@ int main(int argc, char **argv) {
           } catch (...) {
             std::cerr << "Invalid range max." << std::endl; 
           }
-      } else if (opt.substr(0,1) == "x") {    
+      } else if (opt.substr(0,1) == "*") {    
           try {
             auto times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));
 

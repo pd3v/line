@@ -1,6 +1,6 @@
 **Most recent upgrades**
 
-. `x` command for length multiplier of playing phrase; e.g. `x2` command on playing phrase "c3 cs3" will become "c3 cs3 c3 cs3". 1/2 to 1/4 note duration
+. `*` command for length multiplier of playing phrase; e.g. `*2` command on playing phrase "c3 cs3" will become "c3 cs3 c3 cs3". 1/2 to 1/4 note duration
 
 . Save and load a text file with the preferred phrases' list
 
