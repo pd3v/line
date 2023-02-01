@@ -15,7 +15,7 @@
 
 <!-- [macos binaries](https://github.com/pd3v/line/actions/runs/1802392423) -->
 
-### To clone this repo with *rtmidi* submodule included
+### To clone this repo with *rtmidi*, *rtaudio* and *link* submodules included
 
 `git clone --recursive https://github.com/pd3v/line.git`
 
@@ -201,5 +201,10 @@ from default **line>** to **_my_synth>**, type:
 
 `ms` or `me`
 
+**Set latency:**
+
+subtract 10 ms 
+
+`lt10`
 
  

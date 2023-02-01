@@ -16,13 +16,16 @@
 #include <sstream>
 #include <stdlib.h>
 #include <algorithm> 
-
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <thread>
+#include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
 #include "externals/rtmidi/RtMidi.h"
+
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
 #endif
+
 extern "C" {
   #include "lua.h"
 	#include "lualib.h"
@@ -33,20 +36,49 @@ using noteAmpT = std::pair<uint8_t,uint8_t>;
 using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 
 const float DEFAULT_BPM = 60.0;
+const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.16";
+const std::string VERSION = "0.4.17";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
 
 const long iterDur = 5; // milliseconds
-float amplitude = 127;
+
+uint8_t bpm = DEFAULT_BPM;
+float amplitude = 127.;
 bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
 std::string phraseStr;
 std::string filenameDefault = "line";
+
+struct State {
+  std::atomic<bool> running;
+  ableton::Link link;
+  ableton::linkaudio::AudioPlatform audioPlatform;
+  
+  State(): running(true),link(DEFAULT_BPM),audioPlatform(link){}
+};
+
+void disableBufferedInput() {
+#if defined(LINK_PLATFORM_UNIX)
+  termios t;
+  tcgetattr(STDIN_FILENO, &t);
+  t.c_lflag &= static_cast<unsigned long>(~ICANON);
+  tcsetattr(STDIN_FILENO, TCSANOW, &t);
+#endif
+}
+
+void enableBufferedInput() {
+#if defined(LINK_PLATFORM_UNIX)
+  termios t;
+  tcgetattr(STDIN_FILENO, &t);
+  t.c_lflag |= ICANON;
+  tcsetattr(STDIN_FILENO, TCSANOW, &t);
+#endif
+}
 
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
@@ -197,10 +229,6 @@ public:
   }
 } parser;
 
-const uint16_t bpm(const int16_t bpm, const uint16_t barDur) {
-  return DEFAULT_BPM/bpm*barDur;
-}
-
 void displayOptionsMenu(std::string menuVers="") {
   using namespace std;
   cout << "----------------------" << endl;
@@ -238,10 +266,10 @@ void displayOptionsMenu(std::string menuVers="") {
   }
   cout << "----------------------" << endl;
   
-  if (rand()%10+1 == 1) cout << "          author:pd3v" << endl;
+  if (int r = rand()%5 == 1) cout << "          author:pd3v" << endl;
 }
 
-void amp(float &amplitude) {
+void amp(float& amplitude) {
   amplitude = 127*amplitude;
 }
 
@@ -273,7 +301,7 @@ phraseT reverse(phraseT _phrase) {
       std::reverse(_subsubPhrase.begin(),_subsubPhrase.end());
     });
   });
-
+  
   return _phrase;
 }
 
@@ -358,6 +386,30 @@ phraseT xscrambleAmp() {
 
   return _phrase;
 }
+
+phraseT multiplier(phraseT _phrase,uint8_t times) {
+  phraseT tempPhrase = _phrase;
+  
+  for(int i = 0;i < times-1;++i) {
+    for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
+      tempPhrase.push_back(_subPhrase);
+    });  
+  }
+
+  _phrase = tempPhrase;
+
+  return _phrase;
+}
+
+const uint16_t barToMs(const int16_t bpm, const uint16_t barDur) {
+  return DEFAULT_BPM/bpm*barDur;
+}
+
+long barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
+
+void bpmLink(double _bpm) {
+  barDur = barToMs(_bpm,REF_BAR_DUR);
+}
  
 std::string prompt = PROMPT;
 
@@ -394,7 +446,6 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
 
 void parsePhrase(std::string& _phrase) {
   phraseT tempPhrase{};
-
   phraseStr = _phrase;
 
   if (range.first != 0 || range.second != 127)
@@ -411,53 +462,75 @@ void parsePhrase(std::string& _phrase) {
 int main(int argc, char **argv) {
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
-
-  const uint16_t refBarDur = 4000; // milliseconds
-  long barDur = bpm(DEFAULT_BPM,refBarDur);
   
   std::vector<uint8_t> noteMessage;
-
   bool rNotes;
   uint8_t ch=0,ccCh=0,tempCh;
   std::tie(rNotes,tempCh,prompt,range.first,range.second) = lineParamsOnStart(argc,argv);
   if (rNotes) ch = tempCh; else ccCh = tempCh; // ouch!
-  
   bool sync = true;
   std::deque<std::string> prefPhrases{};
-
   std::string opt;
+  float latency = 0;
   
   std::mutex mtxWait, mtxPhrase;
   std::condition_variable cv;
     
   bool soundingThread = false;
   bool exit = false;
+  bool syntaxError = false;
+
+  State state;
+  const auto tempo = state.link.captureAppSessionState().tempo();
+  auto& engine = state.audioPlatform.mEngine;
+  state.link.enable(!state.link.isEnabled());
+  state.link.setTempoCallback(bpmLink);
+
+  barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
     
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   
-  auto fut = async(std::launch::async, [&](){
+  auto sequencer = async(std::launch::async, [&](){
+    double toNextBar = 0;
     unsigned long partial = 0;
     phraseT _phrase{};
     uint8_t _ch = ch;
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
-    
+    long barStartTime, barElapsedTime = 0;double barDeltaTime = 0;
+      
+    const std::chrono::microseconds time = state.link.clock().micros();
+    // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
+    const bool linkEnabled = state.link.isEnabled();
+    const std::size_t numPeers = state.link.numPeers();
+    const double quantum = state.audioPlatform.mEngine.quantum();
+    const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
+    // const double late = state.audioPlatform.mEngine.outputLatency; // just a reminder of latency info available in engine
+
     // waiting for live coder's first phrase 
     std::unique_lock<std::mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
     std::lock_guard<std::mutex> lckPhrase(mtxPhrase);
+
+    state.link.enable(true);
     
     while (soundingThread) {
+      const std::chrono::microseconds time = state.link.clock().micros();
+      const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
+      const auto beats = sessionState.beatAtTime(time, quantum);
+      const auto phase = sessionState.phaseAtTime(time, quantum);
+      toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01)-(latency*0.001); // :TODO A better aproach. Works on low lantencies
+      
       if (!phrase.empty()) {
-        partial = barDur/phrase.size();
         _phrase = phrase;
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
-                
+
         if (_rNotes) {
+          if (phase >= toNextBar)  { 
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& notes : subsubPhrase) {
@@ -466,7 +539,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
                 for (auto& notes : subsubPhrase) {  
                   noteMessage[0] = 128+_ch;
                   noteMessage[1] = notes.first;
@@ -475,8 +548,9 @@ int main(int argc, char **argv) {
                 }
               }
             }
+          }
         } else
-          if (sync)  {
+          if (phase >= toNextBar) {
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
@@ -485,10 +559,10 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>((partial/subPhrase.size())-iterDur)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
               }
             }
-          } else {
+          } else if (!sync) {
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
@@ -500,9 +574,9 @@ int main(int argc, char **argv) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
               }
             }
-          }
+          } 
       } else break;
-    }
+    }     
     return "line is off.\n";
   });
 
@@ -510,7 +584,7 @@ int main(int argc, char **argv) {
 
   while (!exit) {
     opt = readline(prompt.c_str());
-
+    
     if (!opt.empty()) {
       if (opt == "ms") {
         displayOptionsMenu("");
@@ -537,7 +611,9 @@ int main(int argc, char **argv) {
           }
       } else if (opt.substr(0,3) == "bpm") {
           try {
-            barDur = bpm(std::abs(std::stoi(opt.substr(3,opt.size()-1))),refBarDur);
+            bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
+            // engine.setTempo(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
+            engine.setTempo(bpm);
           } catch (...) {
             std::cerr << "Invalid bpm." << std::endl;
           }
@@ -545,7 +621,7 @@ int main(int argc, char **argv) {
           phrase.clear();
           soundingThread = true;
           cv.notify_one();
-          std::cout << fut.get();
+          std::cout << sequencer.get();
           exit = true;
       } else if (opt.substr(0,2) == "am") {
           try {
@@ -597,14 +673,25 @@ int main(int argc, char **argv) {
           try {
             range.first = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
-            std::cerr << "Invalid range min value." << std::endl; 
+            std::cerr << "Invalid range min." << std::endl; 
           }
       } else if (opt.substr(0,2) == "ma") {    
           try {
             range.second = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
-            std::cerr << "Invalid range max value." << std::endl; 
-          }    
+            std::cerr << "Invalid range max." << std::endl; 
+          }
+      } else if (opt.substr(0,1) == "x") {    
+          try {
+            auto times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));
+
+            if (times == 0)
+              throw std::runtime_error(""); 
+          
+            phrase = multiplier(phrase,times);
+          } catch (...) {
+            std::cerr << "Invalid phrase multiplier." << std::endl; 
+          }        
       } else if (opt.substr(0,2) == "lb") {    
           // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
           prompt = PROMPT;
@@ -617,10 +704,13 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,2) == "sf") {
           try {
             auto filename = opt.substr(2,opt.size()-1);
+
             if (filename.empty()) filename = filenameDefault;
             std::ofstream outfile (filename + ".line");
+
             for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _phraseStr){outfile << _phraseStr << "\n";});
             outfile.close();
+
             std::cout << "File " + filename + " saved.\n";
           } catch (...) {
             std::cerr << "Invalid filename." << std::endl; 
@@ -630,16 +720,27 @@ int main(int argc, char **argv) {
             auto filename = opt.substr(2,opt.size()-1);
             if (filename.empty()) throw std::runtime_error("");
             std::ifstream file(filename + ".line");
+
             if (file.is_open()) {
               std::string _phrase;
+
               while (std::getline(file, _phrase))
                 prefPhrases.push_back(_phrase.c_str());
               file.close();
+
+              if (filename+">" != PROMPT) prompt = PREPEND_CUSTOM_PROMPT+filename+">";
+
               std::cout << "File loaded.\n";
             } else throw std::runtime_error("");
           } catch (...) {
             std::cerr << "Couldn't load file." << std::endl; 
           }
+      } else if (opt.substr(0,2) == "lt") {    
+        try {
+            latency = std::stof(opt.substr(2,opt.size()-1));
+          } catch (...) {
+            std::cerr << "Invalid latency." << std::endl; 
+          }    
       } else {
         // it's a phrase, if it's not a command
         parsePhrase(opt);

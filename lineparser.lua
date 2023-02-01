@@ -133,7 +133,6 @@ local phraseG = lpeg.P {"phrase",
   note = noteP;
 } * -1
 
-
 -- Phrases of different ranges other then MIDI 0-127
 function rescaleToMIDI(v)
   v = (v-range_min)*127/(range_max-range_min)
