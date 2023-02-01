@@ -127,6 +127,12 @@ maximum is 1000
 
 `am50`
 
+**Concatenate phrase n times:**
+
+concat phrase 4x 
+
+`*4`
+
 **Mute and unmute:**
 
 `m` and `um`
@@ -165,7 +171,7 @@ replace phrase in position 3
 
 load postion 0 phrase; it will play next
 
-`ld0`
+`ld0` or `:0`
 
 **List saved phrases**
 
