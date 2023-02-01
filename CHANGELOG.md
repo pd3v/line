@@ -1,5 +1,9 @@
 **Most recent upgrades**
 
+. `x` command for length multiplier of playing phrase; e.g. `x2` command on playing phrase "c3 cs3" will become "c3 cs3 c3 cs3". 1/2 to 1/4 note duration
+
+. Save and load a text file with the preferred phrases' list
+
 . Save to preferred phrases queue; load back selected to playing; list saved phrases
 
 . Chords in '.' bar subdivisions; e.g.: c5 .(c4 e4 g4) (c4 d4 g4). Plays *1/2 C 1/4 CMaj 1/4 Csus2*

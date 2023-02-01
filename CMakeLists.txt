@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19.2)
 
 set (CMAKE_CXX_STANDARD 17)
 
-project(line VERSION 0.5.14)
+project(line VERSION 0.5.15)
 
 set(LIBRARY_OUTPUT_NAME ${PROJECT_NAME})
     

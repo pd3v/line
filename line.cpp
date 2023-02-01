@@ -39,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.14";
+const std::string VERSION = "0.5.15";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -387,6 +387,20 @@ phraseT xscrambleAmp() {
   return _phrase;
 }
 
+phraseT multiplier(phraseT _phrase,uint8_t times) {
+  phraseT tempPhrase = _phrase;
+  
+  for(int i = 0;i < times-1;++i) {
+    for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
+      tempPhrase.push_back(_subPhrase);
+    });  
+  }
+
+  _phrase = tempPhrase;
+
+  return _phrase;
+}
+
 const uint16_t barToMs(const int16_t bpm, const uint16_t barDur) {
   return DEFAULT_BPM/bpm*barDur;
 }
@@ -666,7 +680,18 @@ int main(int argc, char **argv) {
             range.second = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
             std::cerr << "Invalid range max." << std::endl; 
-          }    
+          }
+      } else if (opt.substr(0,1) == "x") {    
+          try {
+            auto times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));
+
+            if (times == 0)
+              throw std::runtime_error(""); 
+          
+            phrase = multiplier(phrase,times);
+          } catch (...) {
+            std::cerr << "Invalid phrase multiplier." << std::endl; 
+          }        
       } else if (opt.substr(0,2) == "lb") {    
           // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
           prompt = PROMPT;
@@ -679,10 +704,13 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,2) == "sf") {
           try {
             auto filename = opt.substr(2,opt.size()-1);
+
             if (filename.empty()) filename = filenameDefault;
             std::ofstream outfile (filename + ".line");
+
             for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _phraseStr){outfile << _phraseStr << "\n";});
             outfile.close();
+
             std::cout << "File " + filename + " saved.\n";
           } catch (...) {
             std::cerr << "Invalid filename." << std::endl; 
@@ -690,13 +718,19 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,2) == "lf") {
           try {
             auto filename = opt.substr(2,opt.size()-1);
+
             if (filename.empty()) throw std::runtime_error("");
             std::ifstream file(filename + ".line");
+
             if (file.is_open()) {
               std::string _phrase;
+
               while (std::getline(file, _phrase))
                 prefPhrases.push_back(_phrase.c_str());
               file.close();
+
+              if (filename+">" != PROMPT) prompt = PREPEND_CUSTOM_PROMPT+filename+">";
+
               std::cout << "File loaded.\n";
             } else throw std::runtime_error("");
           } catch (...) {
