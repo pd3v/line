@@ -389,17 +389,15 @@ phraseT xscrambleAmp() {
 }
 
 phraseT multiplier(phraseT _phrase,uint8_t times) {
-  phraseT tempPhrase = _phrase;
+  phraseT nTimesPhrase = _phrase;
   
-  for(int i = 0;i < times-1;++i) {
+  for(int n = 0;n < times-1;++n) {
     for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
-      tempPhrase.push_back(_subPhrase);
+      nTimesPhrase.push_back(_subPhrase);
     });  
   }
 
-  _phrase = tempPhrase;
-
-  return _phrase;
+  return nTimesPhrase;
 }
 
 const uint16_t barToMs(const int16_t bpm, const uint16_t barDur) {
@@ -719,7 +717,7 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,2) == "lf") {
           try {
             auto filename = opt.substr(2,opt.size()-1);
-            if (filename.empty()) throw std::runtime_error("");
+            if (filename.empty()) filename = "line";
             std::ifstream file(filename + ".line");
 
             if (file.is_open()) {
