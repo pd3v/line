@@ -713,8 +713,8 @@ int main(int argc, char **argv) {
             std::ofstream outfile (filename + ".line");
 
             // line instance params
-            outfile << std::to_string(rNotes) << ' ' << (rNotes ? std::to_string((int)ch) : std::to_string((int)ccCh)) << ' '
-             << filename << ' ' << std::to_string(range.first) << ' ' << std::to_string(range.second) << " \n";
+            outfile << std::to_string(rNotes) << '\n' << (rNotes ? std::to_string((int)ch) : std::to_string((int)ccCh)) << '\n'
+             << filename << '\n' << std::to_string(range.first) << '\n' << std::to_string(range.second) << "\n\n";
 
             for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _phraseStr){outfile << _phraseStr << "\n";});
             outfile.close();
@@ -731,15 +731,16 @@ int main(int argc, char **argv) {
 
             if (file.is_open()) {
               std::vector<std::string>params{};
-              std::string param,trash;
+              std::string param;
               std::string _phrase;
-              int contParams = 0;
+              uint8_t countParams = 0;
 
+              prefPhrases.clear();
+              
               // [ load line instance params
-              while (std::getline(file,param,' ') && contParams < 5) {
-                ++contParams;
+              while (std::getline(file,param) && countParams < 5) {
+                ++countParams;
                 params.push_back(param);
-                std::cout << param << '\n' << std::flush;
               }
 
               std::istringstream(params.at(0)) >> rNotes;
@@ -749,14 +750,9 @@ int main(int argc, char **argv) {
               range.second = std::stof(params.at(4));
               // --- ]
 
-              std::cout << "-------" << '\n';
-
-              file.tellg();
-
-              while (std::getline(file,_phrase)) {
+              while (std::getline(file,_phrase))
                 prefPhrases.push_back(_phrase.c_str());
-                std::cout << _phrase << '\n' << std::flush;
-              }
+              
               file.close();
 
               std::cout << "File loaded.\n";
