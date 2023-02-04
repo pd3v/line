@@ -15,7 +15,8 @@
 #include <stdexcept>
 #include <sstream>
 #include <stdlib.h>
-#include <algorithm> 
+#include <algorithm>
+#include <tuple>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <thread>
@@ -43,6 +44,7 @@ const std::string VERSION = "0.4.18";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
+std::string filenameDefault = "line";
 
 const long iterDur = 5; // milliseconds
 
@@ -52,7 +54,6 @@ bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
 std::string phraseStr;
-std::string filenameDefault = "line";
 
 struct State {
   std::atomic<bool> running;
@@ -466,6 +467,7 @@ int main(int argc, char **argv) {
   bool rNotes;
   uint8_t ch=0,ccCh=0,tempCh;
   std::tie(rNotes,tempCh,prompt,range.first,range.second) = lineParamsOnStart(argc,argv);
+
   if (rNotes) ch = tempCh; else ccCh = tempCh; // ouch!
   bool sync = true;
   std::deque<std::string> prefPhrases{};
@@ -512,7 +514,7 @@ int main(int argc, char **argv) {
     std::unique_lock<std::mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
     std::lock_guard<std::mutex> lckPhrase(mtxPhrase);
-
+    
     state.link.enable(true);
     
     while (soundingThread) {
@@ -656,6 +658,9 @@ int main(int argc, char **argv) {
           try {
             auto cmdLen = opt.substr(0,1) == ":" ? 1 : 2;
             parsePhrase(prefPhrases.at(std::stof(opt.substr(cmdLen,opt.size()-1))));
+
+            soundingThread = true;
+            cv.notify_one();
           } catch (...) {
             std::cerr << "Invalid phrase slot." << std::endl; 
           }
@@ -704,8 +709,12 @@ int main(int argc, char **argv) {
           try {
             auto filename = opt.substr(2,opt.size()-1);
 
-            if (filename.empty()) filename = filenameDefault;
+            if (filename.empty()) filename = (prompt != PROMPT ? prompt.substr(1,prompt.length()-2) : filenameDefault);
             std::ofstream outfile (filename + ".line");
+
+            // line instance params
+            outfile << std::to_string(rNotes) << ' ' << (rNotes ? std::to_string((int)ch) : std::to_string((int)ccCh)) << ' '
+             << filename << ' ' << std::to_string(range.first) << ' ' << std::to_string(range.second) << " \n";
 
             for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _phraseStr){outfile << _phraseStr << "\n";});
             outfile.close();
@@ -717,17 +726,38 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,2) == "lf") {
           try {
             auto filename = opt.substr(2,opt.size()-1);
-            if (filename.empty()) filename = "line";
+            if (filename.empty()) filename = filenameDefault;
             std::ifstream file(filename + ".line");
 
             if (file.is_open()) {
+              std::vector<std::string>params{};
+              std::string param,trash;
               std::string _phrase;
+              int contParams = 0;
 
-              while (std::getline(file, _phrase))
+              // [ load line instance params
+              while (std::getline(file,param,' ') && contParams < 5) {
+                ++contParams;
+                params.push_back(param);
+                std::cout << param << '\n' << std::flush;
+              }
+
+              std::istringstream(params.at(0)) >> rNotes;
+              (rNotes) ? ch = std::stoi(params.at(1)) : ccCh = std::stoi(params.at(1));
+              prompt = PREPEND_CUSTOM_PROMPT+params.at(2)+">";
+              range.first = std::stof(params.at(3));
+              range.second = std::stof(params.at(4));
+              // --- ]
+
+              std::cout << "-------" << '\n';
+
+              file.tellg();
+
+              while (std::getline(file,_phrase)) {
                 prefPhrases.push_back(_phrase.c_str());
+                std::cout << _phrase << '\n' << std::flush;
+              }
               file.close();
-
-              if (filename+">" != PROMPT) prompt = PREPEND_CUSTOM_PROMPT+filename+">";
 
               std::cout << "File loaded.\n";
             } else throw std::runtime_error("");
