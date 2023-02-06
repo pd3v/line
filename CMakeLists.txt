@@ -3,15 +3,10 @@ cmake_minimum_required(VERSION 3.19.2)
 set (CMAKE_CXX_STANDARD 17)
 
 project(line VERSION 0.4.19)
-
-set(LIBRARY_OUTPUT_NAME ${PROJECT_NAME})
     
 add_executable("${PROJECT_NAME}" line.cpp)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi)
-
-include_directories(linkaudio)
-include(${CMAKE_CURRENT_SOURCE_DIR}/externals/link/AbletonLinkConfig.cmake)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   SET(LUA_LIB_NAME liblua.a liblua.dylib)
@@ -33,19 +28,11 @@ target_include_directories(
   ${PROJECT_NAME} PUBLIC
   ${LUA_INCLUDE_DIR}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/include/ableton/
 )
 
-target_link_directories(
+target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/examples/
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/src/ableton/link/
-)
-
-target_compile_definitions(${PROJECT_NAME} 
-  PRIVATE -DLINKHUT_AUDIO_PLATFORM_DUMMY=1
 )
 
 target_link_libraries(
@@ -53,5 +40,4 @@ target_link_libraries(
   LINK_PRIVATE rtmidi
   LINK_PUBLIC ${LUA_LIB_FILE}
   LINK_PRIVATE readline
-  Ableton::Link
 )

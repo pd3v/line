@@ -20,7 +20,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <thread>
-#include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
 #include "externals/rtmidi/RtMidi.h"
 
 #if defined(LINK_PLATFORM_UNIX)
@@ -45,41 +44,13 @@ const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
 std::string filenameDefault = "line";
-
 const long iterDur = 5; // milliseconds
-
-uint8_t bpm = DEFAULT_BPM;
+long barDurMs = REF_BAR_DUR;
 float amplitude = 127.;
 bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
 std::string phraseStr;
-
-struct State {
-  std::atomic<bool> running;
-  ableton::Link link;
-  ableton::linkaudio::AudioPlatform audioPlatform;
-  
-  State(): running(true),link(DEFAULT_BPM),audioPlatform(link){}
-};
-
-void disableBufferedInput() {
-#if defined(LINK_PLATFORM_UNIX)
-  termios t;
-  tcgetattr(STDIN_FILENO, &t);
-  t.c_lflag &= static_cast<unsigned long>(~ICANON);
-  tcsetattr(STDIN_FILENO, TCSANOW, &t);
-#endif
-}
-
-void enableBufferedInput() {
-#if defined(LINK_PLATFORM_UNIX)
-  termios t;
-  tcgetattr(STDIN_FILENO, &t);
-  t.c_lflag |= ICANON;
-  tcsetattr(STDIN_FILENO, TCSANOW, &t);
-#endif
-}
 
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
@@ -229,6 +200,10 @@ public:
     return v;
   }
 } parser;
+
+const uint16_t bpmToBarMs(const int16_t bpm, const uint16_t barDurMs) {
+  return DEFAULT_BPM/bpm*barDurMs;
+}
 
 void displayOptionsMenu(std::string menuVers="") {
   using namespace std;
@@ -400,16 +375,6 @@ phraseT multiplier(phraseT _phrase,uint8_t times) {
 
   return nTimesPhrase;
 }
-
-const uint16_t barToMs(const int16_t bpm, const uint16_t barDur) {
-  return DEFAULT_BPM/bpm*barDur;
-}
-
-long barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
-
-void bpmLink(double _bpm) {
-  barDur = barToMs(_bpm,REF_BAR_DUR);
-}
  
 std::string prompt = PROMPT;
 
@@ -480,15 +445,7 @@ int main(int argc, char **argv) {
   bool soundingThread = false;
   bool exit = false;
   bool syntaxError = false;
-
-  State state;
-  const auto tempo = state.link.captureAppSessionState().tempo();
-  auto& engine = state.audioPlatform.mEngine;
-  state.link.enable(!state.link.isEnabled());
-  state.link.setTempoCallback(bpmLink);
-
-  barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
-    
+  
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   noteMessage.push_back(0);
@@ -501,29 +458,13 @@ int main(int argc, char **argv) {
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
     long barStartTime, barElapsedTime = 0;double barDeltaTime = 0;
-      
-    const std::chrono::microseconds time = state.link.clock().micros();
-    // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
-    const bool linkEnabled = state.link.isEnabled();
-    const std::size_t numPeers = state.link.numPeers();
-    const double quantum = state.audioPlatform.mEngine.quantum();
-    const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
-    // const double late = state.audioPlatform.mEngine.outputLatency; // just a reminder of latency info available in engine
 
     // waiting for live coder's first phrase 
     std::unique_lock<std::mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
     std::lock_guard<std::mutex> lckPhrase(mtxPhrase);
     
-    state.link.enable(true);
-    
     while (soundingThread) {
-      const std::chrono::microseconds time = state.link.clock().micros();
-      const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
-      const auto beats = sessionState.beatAtTime(time, quantum);
-      const auto phase = sessionState.phaseAtTime(time, quantum);
-      toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01)-(latency*0.001); // :TODO A better aproach. Works on low lantencies
-      
       if (!phrase.empty()) {
         _phrase = phrase;
         _ch = ch;
@@ -531,27 +472,25 @@ int main(int argc, char **argv) {
         _rNotes = rNotes;
 
         if (_rNotes) {
-          if (phase >= toNextBar)  { 
-            for (auto& subPhrase : _phrase) {
-              for (auto& subsubPhrase : subPhrase) {
-                for (auto& notes : subsubPhrase) {
-                  noteMessage[0] = 144+_ch;
-                  noteMessage[1] = notes.first;
-                  noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
-                  midiOut.sendMessage(&noteMessage);
-                }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
-                for (auto& notes : subsubPhrase) {  
-                  noteMessage[0] = 128+_ch;
-                  noteMessage[1] = notes.first;
-                  noteMessage[2] = 0;
-                  midiOut.sendMessage(&noteMessage);
-                }
+          for (auto& subPhrase : _phrase) {
+            for (auto& subsubPhrase : subPhrase) {
+              for (auto& notes : subsubPhrase) {
+                noteMessage[0] = 144+_ch;
+                noteMessage[1] = notes.first;
+                noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
+                midiOut.sendMessage(&noteMessage);
+              }
+              std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDurMs/_phrase.size()/subPhrase.size()-iterDur)));
+              for (auto& notes : subsubPhrase) {  
+                noteMessage[0] = 128+_ch;
+                noteMessage[1] = notes.first;
+                noteMessage[2] = 0;
+                midiOut.sendMessage(&noteMessage);
               }
             }
           }
         } else
-          if (phase >= toNextBar) {
+          if (sync) {
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
@@ -560,10 +499,10 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDurMs/_phrase.size()/subPhrase.size()-iterDur)));
               }
             }
-          } else if (!sync) {
+          } else {
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
@@ -612,9 +551,7 @@ int main(int argc, char **argv) {
           }
       } else if (opt.substr(0,3) == "bpm") {
           try {
-            bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
-            // engine.setTempo(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
-            engine.setTempo(bpm);
+            barDurMs = bpmToBarMs(std::abs(std::stoi(opt.substr(3,opt.size()-1))),REF_BAR_DUR);
           } catch (...) {
             std::cerr << "Invalid bpm." << std::endl;
           }
