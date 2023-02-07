@@ -1,6 +1,6 @@
-**Most recent upgrades**
+## 0.4.19
 
-. Save and load line's instance parameters into '.line' file
+. Save/load line's instance parameters into/from '.line' file; on loading a '.line' file to a line instance, all parameters will also be applied, say, prompt, notes/cc, ch, values range
 
 . `*` command for length multiplier of playing phrase; e.g. `*2` command on playing phrase "c3 cs3" will become "c3 cs3 c3 cs3". 1/2 to 1/4 note duration
 
