@@ -161,21 +161,41 @@ scrambles notes across the phrases and rhythmic structure
 
 place it on top of the queue; position 0
 
-`sv`
+`sp`
 
 replace phrase in position 3
 
-`sv3`
+`sp3`
 
 **Load phrase:**  
 
 load postion 0 phrase; it will play next
 
-`ld0` or `:0`
+`lp0` or `:0`
 
 **List saved phrases**
 
 `l`
+
+**Save queued phrases to *.line* (= txt) file**
+
+Will assume prompt text as file name
+
+`sf`
+
+Save file with *mysynth.line* name
+
+`sfmysynth`
+
+*Note: Will also save line instance parameters (prompt, channel, notes/cc, range of values)*
+
+**Load *.line* file to line**
+
+Load sampler.line
+
+`lfsampler`
+
+*Note: Will apply to line instance saved parameters*
 
 **Switch between notes and cc modes:**  
 
