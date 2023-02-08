@@ -51,6 +51,7 @@ bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
 std::string phraseStr;
+std::deque<std::string> prefPhrases{};
 
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
@@ -238,8 +239,8 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..sp<[n]>   save phr @ n" << endl;
     cout << "..:<[n]>    load phr @ n" << endl;
     cout << "..l         list sp phrs" << endl;
-    cout << "..sf<name>  save .line file" << endl;
-    cout << "..lf<name>  load .line file" << endl;
+    cout << "..sf<[a|n]> save .line file" << endl;
+    cout << "..lf<[a|n]> load .line file" << endl;
   }
   cout << "----------------------" << endl;
   
@@ -382,7 +383,41 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
   // line args order: notes/cc ch label range_min range_max
   std::tuple<bool,uint8_t,const char*,float,float> lineParams{true,0,PROMPT,0,127};
 
-  if (argc > 3) {
+  if (argc == 2) { // Maybe a loadable .line file 
+    try {
+      std::string filename = argv[1];
+      std::ifstream file(filename + ".line");
+
+      if (file.is_open()) {
+        std::vector<std::string>params{};
+        std::string param;
+        std::string _phrase;
+        uint8_t countParams = 0;
+        
+        // [ load line instance params
+        while (std::getline(file,param) && countParams < 5) {
+          ++countParams;
+          params.push_back(param);
+        }
+
+        lineParams = {(params.at(0) == "0" ? false : true),std::stoi(params.at(1)),
+          (PREPEND_CUSTOM_PROMPT+params.at(2)+">").c_str(),
+          std::stof(params.at(3)),
+          std::stof(params.at(4))
+        };
+        // --- ]
+
+        while (std::getline(file,_phrase))
+          prefPhrases.push_back(_phrase.c_str());
+        
+        file.close();
+
+        std::cout << "File loaded.\n";
+      } else throw std::runtime_error("");
+    } catch(...) {
+      std::cout << "Cound't load file.\n" << std::flush;
+    }
+  } else if (argc > 3) {
     auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
     std::string _prompt(argv[3]);
     _prompt = PREPEND_CUSTOM_PROMPT+_prompt+">";
@@ -435,7 +470,6 @@ int main(int argc, char **argv) {
 
   if (rNotes) ch = tempCh; else ccCh = tempCh; // ouch!
   bool sync = true;
-  std::deque<std::string> prefPhrases{};
   std::string opt;
   float latency = 0;
   
