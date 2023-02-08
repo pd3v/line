@@ -1,3 +1,7 @@
+**Most recent upgrades**
+
+. Load *.line file on line's launch, as a parameter
+
 ## 0.4.19
 
 . Save/load line's instance parameters into/from '.line' file; on loading a '.line' file to a line instance, all parameters will also be applied, say, prompt, notes/cc, ch, values range
