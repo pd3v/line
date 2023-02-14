@@ -38,9 +38,10 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 
 const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
+const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.20";
+const std::string VERSION = "0.5.21";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -49,6 +50,7 @@ std::string filenameDefault = "line";
 const long iterDur = 5; // milliseconds
 
 uint8_t bpm = DEFAULT_BPM;
+double quantum;
 float amplitude = 127.;
 bool muted = false;
 std::pair<float,float> range{0,127};
@@ -534,13 +536,12 @@ int main(int argc, char **argv) {
     uint8_t _ch = ch;
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
-    long barStartTime, barElapsedTime = 0;double barDeltaTime = 0;
       
     const std::chrono::microseconds time = state.link.clock().micros();
     // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
     const bool linkEnabled = state.link.isEnabled();
     const std::size_t numPeers = state.link.numPeers();
-    const double quantum = state.audioPlatform.mEngine.quantum();
+    quantum = state.audioPlatform.mEngine.quantum();
     const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
     // const double late = state.audioPlatform.mEngine.outputLatency; // just a reminder of latency info available in engine
 
@@ -647,11 +648,18 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,3) == "bpm") {
           try {
             bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
-            // engine.setTempo(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
+            barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
             engine.setTempo(bpm);
           } catch (...) {
             std::cerr << "Invalid bpm." << std::endl;
           }
+      } else if (opt.substr(0,1) == "/") {
+          try {
+            quantum = std::stof(opt.substr(1,opt.size()-1));
+            barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
+          } catch (...) {
+            std::cerr << "Invalid phrase duration." << std::endl; 
+          }    
       } else if (opt == "ex") {
           phrase.clear();
           soundingThread = true;
@@ -728,7 +736,7 @@ int main(int argc, char **argv) {
           
             phrase = multiplier(phrase,times);
           } catch (...) {
-            std::cerr << "Invalid phrase multiplier." << std::endl; 
+            std::cerr << "Invalid phrase replication." << std::endl; 
           }        
       } else if (opt.substr(0,2) == "lb") {    
           // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
@@ -795,11 +803,11 @@ int main(int argc, char **argv) {
             std::cerr << "Couldn't load file." << std::endl; 
           }
       } else if (opt.substr(0,2) == "lt") {    
-        try {
+          try {
             latency = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
             std::cerr << "Invalid latency." << std::endl; 
-          }    
+          }
       } else {
         // it's a phrase, if it's not a command
         parsePhrase(opt);

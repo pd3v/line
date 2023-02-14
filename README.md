@@ -111,6 +111,14 @@ channel 2
 
 `bpm120`
 
+**Set phrase duration (polyrhythm):**  
+
+3 beats per phrase
+
+`\3`
+
+*Note: 4 beats (1/4 note), by default*
+
 **Set a range of values (MIDI default):**
 
 minimum is 100

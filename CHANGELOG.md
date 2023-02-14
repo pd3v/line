@@ -1,5 +1,7 @@
 **Most recent upgrades**
 
+. Polyrhythms
+
 . Load *.line file on line's launch, as a parameter
 
 ## 0.5.20
