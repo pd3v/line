@@ -41,7 +41,7 @@ const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.21";
+const std::string VERSION = "0.5.22";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -392,7 +392,7 @@ phraseT xscrambleAmp() {
   return _phrase;
 }
 
-phraseT multiplier(phraseT _phrase,uint8_t times) {
+phraseT replicate(phraseT _phrase,uint8_t times) {
   phraseT nTimesPhrase = _phrase;
   
   for(int n = 0;n < times-1;++n) {
@@ -536,6 +536,7 @@ int main(int argc, char **argv) {
     uint8_t _ch = ch;
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
+    long _barDur = barDur;
       
     const std::chrono::microseconds time = state.link.clock().micros();
     // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
@@ -564,6 +565,7 @@ int main(int argc, char **argv) {
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
+        _barDur = barDur;
 
         if (_rNotes) {
           if (phase >= toNextBar)  { 
@@ -575,7 +577,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(_barDur/_phrase.size()/subPhrase.size()-iterDur)));
                 for (auto& notes : subsubPhrase) {  
                   noteMessage[0] = 128+_ch;
                   noteMessage[1] = notes.first;
@@ -595,7 +597,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(_barDur/_phrase.size()/subPhrase.size()-iterDur)));
               }
             }
           } else if (!sync) {
@@ -734,7 +736,7 @@ int main(int argc, char **argv) {
             if (times == 0)
               throw std::runtime_error(""); 
           
-            phrase = multiplier(phrase,times);
+            phrase = replicate(phrase,times);
           } catch (...) {
             std::cerr << "Invalid phrase replication." << std::endl; 
           }        
