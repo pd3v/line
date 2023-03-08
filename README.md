@@ -62,6 +62,10 @@ In command-line, type and Enter:
 
 `./line`
 
+Or if you have multiple **.line* file in a directory, type and Enter:
+
+`./linegig.py`
+
 (alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)
 
 **Now run your favorite synth, sampler, DAW, or other MIDI receiver!**

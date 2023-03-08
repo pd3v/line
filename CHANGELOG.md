@@ -1,8 +1,12 @@
 **Most recent upgrades**
 
+. Automated loading of a line gig - automated lauching of as much line instances as .line files exist in a directory
+
 . Polyrhythms
 
 . Load *.line file on line's launch, as a parameter
+
+____
 
 ## 0.5.20
 
