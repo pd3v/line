@@ -41,7 +41,7 @@ const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.22";
+const std::string VERSION = "0.5.23";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -629,32 +629,41 @@ int main(int argc, char **argv) {
       } else if (opt == "me") {
         displayOptionsMenu(opt);
       } else if (opt.substr(0,2) == "ch") {
-          try {
-            ch = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
-          }
-          catch (...) {
-            std::cerr << "Invalid channel." << std::endl; 
-          }
+          if (opt.length() > strlen("ch"))
+            try {
+              ch = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+            }
+            catch (...) {
+              std::cerr << "Invalid channel.\n";
+            }
+          else
+            std::cout << (int)ch << '\n';  
       } else if (opt == "n") {
           rNotes = true;
           phrase.clear();
           phrase.push_back({{{REST_VAL,0}}});
       } else if (opt.substr(0,2) == "cc") {
-          try {
-            ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
-            rNotes = false;
-          }
-          catch (...) {
-            std::cerr << "Invalid cc channel." << std::endl; 
-          }
+          if (opt.length() > strlen("cc"))
+            try {
+              ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+              rNotes = false;
+            }
+            catch (...) {
+              std::cerr << "Invalid cc channel." << std::endl; 
+            }
+          else
+            std::cout << (int)ccCh << '\n';  
       } else if (opt.substr(0,3) == "bpm") {
-          try {
-            bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
-            barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
-            engine.setTempo(bpm);
-          } catch (...) {
-            std::cerr << "Invalid bpm." << std::endl;
-          }
+          if (opt.length() > strlen("bpm"))
+            try {
+              bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
+              barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
+              engine.setTempo(bpm);
+            } catch (...) {
+              std::cerr << "Invalid bpm." << std::endl;
+            }
+          else
+            std::cout << (int)bpm << '\n';    
       } else if (opt.substr(0,1) == "/") {
           try {
             quantum = std::stof(opt.substr(1,opt.size()-1));
@@ -717,18 +726,24 @@ int main(int argc, char **argv) {
           sync= true;
       } else if (opt == "o") {    
           sync= false;
-      } else if (opt.substr(0,2) == "mi") {    
-          try {
-            range.first = std::stof(opt.substr(2,opt.size()-1));
-          } catch (...) {
-            std::cerr << "Invalid range min." << std::endl; 
-          }
+      } else if (opt.substr(0,2) == "mi") {
+          if (opt.length() > strlen("mi"))    
+            try {
+              range.first = std::stof(opt.substr(2,opt.size()-1));
+            } catch (...) {
+              std::cerr << "Invalid range min." << std::endl; 
+            }
+          else
+            std::cout << range.first << '\n';  
       } else if (opt.substr(0,2) == "ma") {    
-          try {
-            range.second = std::stof(opt.substr(2,opt.size()-1));
-          } catch (...) {
-            std::cerr << "Invalid range max." << std::endl; 
-          }
+          if (opt.length() > strlen("ma"))
+            try {
+              range.second = std::stof(opt.substr(2,opt.size()-1));
+            } catch (...) {
+              std::cerr << "Invalid range max." << std::endl; 
+            }
+          else
+            std::cout << range.second << '\n';
       } else if (opt.substr(0,1) == "*") {    
           try {
             auto times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));
