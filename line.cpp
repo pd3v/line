@@ -45,6 +45,7 @@ const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
 std::string filenameDefault = "line";
 const long iterDur = 5; // milliseconds
+uint8_t bpm = DEFAULT_BPM;
 long barDurMs = REF_BAR_DUR;
 float amplitude = 127.;
 bool muted = false;
@@ -565,30 +566,51 @@ int main(int argc, char **argv) {
       } else if (opt == "me") {
         displayOptionsMenu(opt);
       } else if (opt.substr(0,2) == "ch") {
-          try {
-            ch = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
-          }
-          catch (...) {
-            std::cerr << "Invalid channel." << std::endl; 
-          }
+          if (opt.length() > strlen("ch"))
+            try {
+              ch = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+            }
+            catch (...) {
+              std::cerr << "Invalid channel.\n";
+            }
+          else
+            std::cout << (int)ch << '\n';  
       } else if (opt == "n") {
           rNotes = true;
           phrase.clear();
           phrase.push_back({{{REST_VAL,0}}});
       } else if (opt.substr(0,2) == "cc") {
-          try {
-            ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
-            rNotes = false;
-          }
-          catch (...) {
-            std::cerr << "Invalid cc channel." << std::endl; 
-          }
+          if (opt.length() > strlen("cc"))
+            try {
+              ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+              rNotes = false;
+            }
+            catch (...) {
+              std::cerr << "Invalid cc channel." << std::endl; 
+            }
+          else
+            std::cout << (int)ccCh << '\n';
       } else if (opt.substr(0,3) == "bpm") {
+          /*
           try {
-            barDurMs = bpmToBarMs(std::abs(std::stoi(opt.substr(3,opt.size()-1))),REF_BAR_DUR);
+            bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
+            //barDurMs = bpmToBarMs(std::abs(std::stoi(opt.substr(3,opt.size()-1))),REF_BAR_DUR);
+            barDurMs = bpmToBarMs(bpm,REF_BAR_DUR);
           } catch (...) {
             std::cerr << "Invalid bpm." << std::endl;
           }
+          */
+          if (opt.length() > strlen("bpm"))
+            try {
+              bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
+              // barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
+              barDurMs = bpmToBarMs(bpm,REF_BAR_DUR);
+              // engine.setTempo(bpm);
+            } catch (...) {
+              std::cerr << "Invalid bpm." << std::endl;
+            }
+          else
+            std::cout << (int)bpm << '\n';
       } else if (opt == "ex") {
           phrase.clear();
           soundingThread = true;
@@ -645,17 +667,23 @@ int main(int argc, char **argv) {
       } else if (opt == "o") {    
           sync= false;
       } else if (opt.substr(0,2) == "mi") {    
-          try {
-            range.first = std::stof(opt.substr(2,opt.size()-1));
-          } catch (...) {
-            std::cerr << "Invalid range min." << std::endl; 
-          }
+          if (opt.length() > strlen("mi"))
+            try {
+              range.first = std::stof(opt.substr(2,opt.size()-1));
+            } catch (...) {
+              std::cerr << "Invalid range min." << std::endl; 
+            }
+          else
+            std::cout << range.first << '\n';  
       } else if (opt.substr(0,2) == "ma") {    
-          try {
-            range.second = std::stof(opt.substr(2,opt.size()-1));
-          } catch (...) {
-            std::cerr << "Invalid range max." << std::endl; 
-          }
+          if (opt.length() > strlen("ma"))
+            try {
+              range.second = std::stof(opt.substr(2,opt.size()-1));
+            } catch (...) {
+              std::cerr << "Invalid range max." << std::endl; 
+            }
+          else
+            std::cout << range.second << '\n';
       } else if (opt.substr(0,1) == "*") {    
           try {
             auto times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));

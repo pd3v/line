@@ -1,5 +1,7 @@
 **Most recent upgrades**
 
+. `ch`, `cc`, `bpm`, `mi` and `ma` commands when typd alone, no value typed after, will return current set value
+
 . Load *.line file on line's launch, as a parameter
 
 ## 0.4.19
