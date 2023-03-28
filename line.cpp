@@ -39,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.19";
+const std::string VERSION = "0.4.21";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -413,7 +413,7 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
         
         file.close();
 
-        std::cout << "File loaded.\n";
+        std::cout << "File " << filename + ".line" << " loaded.\n";
       } else throw std::runtime_error("");
     } catch(...) {
       std::cout << "Cound't load file.\n" << std::flush;
@@ -591,21 +591,10 @@ int main(int argc, char **argv) {
           else
             std::cout << (int)ccCh << '\n';
       } else if (opt.substr(0,3) == "bpm") {
-          /*
-          try {
-            bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
-            //barDurMs = bpmToBarMs(std::abs(std::stoi(opt.substr(3,opt.size()-1))),REF_BAR_DUR);
-            barDurMs = bpmToBarMs(bpm,REF_BAR_DUR);
-          } catch (...) {
-            std::cerr << "Invalid bpm." << std::endl;
-          }
-          */
           if (opt.length() > strlen("bpm"))
             try {
               bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
-              // barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
               barDurMs = bpmToBarMs(bpm,REF_BAR_DUR);
-              // engine.setTempo(bpm);
             } catch (...) {
               std::cerr << "Invalid bpm." << std::endl;
             }
@@ -684,17 +673,21 @@ int main(int argc, char **argv) {
             }
           else
             std::cout << range.second << '\n';
-      } else if (opt.substr(0,1) == "*") {    
-          try {
-            auto times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));
+      } else if (opt.substr(0,1) == "*") {
+          static uint8_t times = 1;
+          if (opt.length() > strlen("*")) 
+            try {
+              times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));
 
-            if (times == 0)
-              throw std::runtime_error(""); 
+              if (times == 0)
+                throw std::runtime_error(""); 
           
-            phrase = multiplier(phrase,times);
-          } catch (...) {
-            std::cerr << "Invalid phrase multiplier." << std::endl; 
-          }        
+              phrase = multiplier(phrase,times);
+            } catch (...) {
+              std::cerr << "Invalid phrase multiplier." << std::endl; 
+            }
+          else
+            std::cout << (int)times << '\n';        
       } else if (opt.substr(0,2) == "lb") {    
           // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
           prompt = PROMPT;
@@ -718,7 +711,7 @@ int main(int argc, char **argv) {
             for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _phraseStr){outfile << _phraseStr << "\n";});
             outfile.close();
 
-            std::cout << "File " + filename + " saved.\n";
+            std::cout << "File " << filename + ".line" << " saved.\n";
           } catch (...) {
             std::cerr << "Invalid filename." << std::endl; 
           }
@@ -754,7 +747,7 @@ int main(int argc, char **argv) {
               
               file.close();
 
-              std::cout << "File loaded.\n";
+              std::cout << "File " << filename + ".line" << " loaded.\n";
             } else throw std::runtime_error("");
           } catch (...) {
             std::cerr << "Couldn't load file." << std::endl; 
