@@ -1,5 +1,9 @@
 **Most recent upgrades**
 
+. load and save '.line' file return file's name.extension
+
+. `*` command alone returns current's phrase multiplier
+
 . `ch`, `cc`, `bpm`, `mi` and `ma` commands when typd alone, no value typed after, will return current set value
 
 . Load *.line file on line's launch, as a parameter
