@@ -1,6 +1,6 @@
 **Most recent upgrades**
 
-. '\' command typed alone returns current set quantum value
+. `\` command typed alone returns current set quantum value
 
 . `ch`, `cc`, `bpm`, `mi` and `ma` commands when typd alone, no value typed after, will return current set value
 
