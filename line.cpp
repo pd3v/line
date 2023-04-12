@@ -49,7 +49,7 @@ std::string filenameDefault = "line";
 
 const long iterDur = 5; // milliseconds
 
-uint8_t bpm = DEFAULT_BPM;
+/*uint8_t*/ double bpm = DEFAULT_BPM;
 double quantum;
 float amplitude = 127.;
 bool muted = false;
@@ -404,14 +404,15 @@ phraseT replicate(phraseT _phrase,uint8_t times) {
   return nTimesPhrase;
 }
 
-const uint16_t barToMs(const int16_t bpm, const uint16_t barDur) {
+const uint16_t barToMs(const double _bpm, const uint16_t barDur) {
   return DEFAULT_BPM/bpm*barDur;
 }
 
 long barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
 
 void bpmLink(double _bpm) {
-  barDur = barToMs(_bpm,REF_BAR_DUR);
+  bpm = _bpm;
+  barDur = barToMs(_bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
 }
  
 std::string prompt = PROMPT;
@@ -537,6 +538,7 @@ int main(int argc, char **argv) {
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
     long _barDur = barDur;
+    auto _quantum = quantum;
       
     const std::chrono::microseconds time = state.link.clock().micros();
     // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
@@ -566,9 +568,10 @@ int main(int argc, char **argv) {
         _ccCh = ccCh;
         _rNotes = rNotes;
         _barDur = barDur;
-
+        
         if (_rNotes) {
-          if (phase >= toNextBar)  { 
+          if (phase >= toNextBar || _quantum < quantum) {
+            _quantum = quantum;
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& notes : subsubPhrase) {
@@ -588,7 +591,8 @@ int main(int argc, char **argv) {
             }
           }
         } else
-          if (phase >= toNextBar) {
+          if (phase >= toNextBar || _quantum < quantum) {
+            _quantum = quantum;
             for (auto& subPhrase : _phrase) {
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
@@ -656,21 +660,23 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,3) == "bpm") {
           if (opt.length() > strlen("bpm"))
             try {
-              bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
-              barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
+              bpm = static_cast<double>(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
               engine.setTempo(bpm);
             } catch (...) {
               std::cerr << "Invalid bpm." << std::endl;
             }
           else
-            std::cout << (int)bpm << '\n';    
+            std::cout << bpm << '\n';    
       } else if (opt.substr(0,1) == "/") {
-          try {
-            quantum = std::stof(opt.substr(1,opt.size()-1));
-            barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
-          } catch (...) {
-            std::cerr << "Invalid phrase duration." << std::endl; 
-          }    
+          if (opt.length() > strlen("/"))
+            try {
+              quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1)));
+              barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
+            } catch (...) {
+              std::cerr << "Invalid phrase duration." << std::endl; 
+            }
+          else
+            std::cout << quantum << '\n';        
       } else if (opt == "ex") {
           phrase.clear();
           soundingThread = true;
