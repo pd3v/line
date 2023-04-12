@@ -34,3 +34,22 @@ else:
 		end tell
 		'"""
 		system(cmd)
+
+	cmd = """osascript -e '
+	tell application "System Events"
+		tell process "Finder"
+  			-- click menu item "Merge All Windows" of menu "Window" of menu bar 0
+  			tell application "System Events" to key code {59, 56, 13}
+  		end tell
+		tell application "Terminal"
+			set selected of tab 2 of window 1 to true
+			tell application "System Events"
+				tell process "Terminal"
+					keystroke "w" using {command down}
+				end tell
+			end tell
+		end tell	
+	end tell	
+	'"""
+	system(cmd)
+
