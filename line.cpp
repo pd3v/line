@@ -41,7 +41,7 @@ const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.24";
+const std::string VERSION = "0.5.25";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -49,7 +49,7 @@ std::string filenameDefault = "line";
 
 const long iterDur = 5; // milliseconds
 
-/*uint8_t*/ double bpm = DEFAULT_BPM;
+double bpm = DEFAULT_BPM;
 double quantum;
 float amplitude = 127.;
 bool muted = false;
@@ -840,6 +840,6 @@ int main(int argc, char **argv) {
       }
     }
   }
-
+  
   return 0;
 }
