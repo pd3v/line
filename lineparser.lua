@@ -84,9 +84,9 @@ end
 
 function noteCipherToMidi(cipher)
   local note,amp
-  ciphers = { c = 0,cb = 11,cs = 1,d = 2,db = 1,ds = 3,
-              e = 4,eb = 3,f = 5,fb = 4,fs = 6,gb = 6,
-              g = 7,gs = 8,ab = 8,a = 9,as = 10,bb = 10,b = 11
+  ciphers = { c = 0,cf = 11,cs = 1,d = 2,df = 1,ds = 3,
+              e = 4,ef = 3,f = 5,ff = 4,fs = 6,gf = 6,
+              g = 7,gs = 8,af = 8,a = 9,as = 10,bf = 10,b = 11
             }
   
   if string.find(cipher,AMP_SYMBOL) then
