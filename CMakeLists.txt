@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19.2)
 
 set (CMAKE_CXX_STANDARD 17)
 
-project(line VERSION 0.4.22)
+project(line VERSION 0.4.23)
     
 add_executable("${PROJECT_NAME}" line.cpp)
 
@@ -40,10 +40,4 @@ target_link_libraries(
   LINK_PRIVATE rtmidi
   LINK_PUBLIC ${LUA_LIB_FILE}
   LINK_PRIVATE readline
-)
-
-target_compile_options(
-  ${PROJECT_NAME} PRIVATE
-  $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
 )
