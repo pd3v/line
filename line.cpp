@@ -39,7 +39,7 @@ const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.22";
+const std::string VERSION = "0.4.23";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -58,7 +58,7 @@ class Parser {
   std::string restSymbol = {REST_SYMBOL};
   lua_State *L = luaL_newstate();
   std::string parserCode;
-  size_t tableSize,subtableSize,subsubtableSize;
+  uint16_t tableSize,subtableSize,subsubtableSize;
   std::string musicStructType;
 
   noteAmpT retreiveNoteAmp() const {
@@ -130,7 +130,7 @@ public:
         tableSize = lua_rawlen(L,-2);
         int8_t note, amp;
       
-        for (int i=0; i<tableSize; ++i) {
+        for (uint16_t i=0; i<tableSize; ++i) {
           musicStructNumIter();
 
           if (musicStructType == "n") {
@@ -145,9 +145,9 @@ public:
               lua_pop(L,2);
             }
           } else if (musicStructType == "s") {
-              size_t _stabsize = lua_rawlen(L,-2);
+              uint16_t _stabsize = lua_rawlen(L,-2);
               
-              for (int i=0; i<_stabsize; ++i) {
+              for (uint16_t i=0; i<_stabsize; ++i) {
                 musicStructNumIter();
 
                 if (musicStructType == "n") {
@@ -203,14 +203,14 @@ public:
   }
 } parser;
 
-const uint16_t bpmToBarMs(const int16_t bpm, const uint16_t barDurMs) {
+uint16_t bpmToBarMs(const int16_t bpm, const uint16_t barDurMs) {
   return DEFAULT_BPM/bpm*barDurMs;
 }
 
 void displayOptionsMenu(std::string menuVers="") {
   using namespace std;
   cout << "----------------------" << endl;
-  cout << "  line " << VERSION << " midi seq  " << endl;
+  cout << " line " << VERSION << " midi seq  " << endl;
   cout << "----------------------" << endl;
   cout << "..<[n] >    phrase    " << endl;
   cout << "..bpm<[n]>  bpm       " << endl;
@@ -245,7 +245,7 @@ void displayOptionsMenu(std::string menuVers="") {
   }
   cout << "----------------------" << endl;
   
-  if (int r = rand()%5 == 1) cout << "          author:pd3v" << endl;
+  if (rand()%5 == 1) cout << "          author:pd3v" << endl;
 }
 
 void amp(float& amplitude) {
@@ -479,20 +479,16 @@ int main(int argc, char **argv) {
     
   bool soundingThread = false;
   bool exit = false;
-  bool syntaxError = false;
   
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   
   auto sequencer = async(std::launch::async, [&](){
-    double toNextBar = 0;
-    unsigned long partial = 0;
     phraseT _phrase{};
     uint8_t _ch = ch;
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
-    long barStartTime, barElapsedTime = 0;double barDeltaTime = 0;
 
     // waiting for live coder's first phrase 
     std::unique_lock<std::mutex> lckWait(mtxWait);
