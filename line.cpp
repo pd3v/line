@@ -37,22 +37,24 @@ using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 
 const float DEFAULT_BPM = 60.0;
 const uint16_t REF_BAR_DUR = 4000; // milliseconds
+const float REF_BEAT_DUR = 0.25; // 1/4 note
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.23";
+const std::string VERSION = "0.4.24";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
 std::string filenameDefault = "line";
 const long iterDur = 5; // milliseconds
 uint8_t bpm = DEFAULT_BPM;
-long barDurMs = REF_BAR_DUR;
+long barDur = REF_BAR_DUR;
 float amplitude = 127.;
 bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
 std::string phraseStr;
 std::deque<std::string> prefPhrases{};
+double beatsPerPhrase = barDur/(REF_BAR_DUR*REF_BEAT_DUR);
 
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
@@ -203,8 +205,8 @@ public:
   }
 } parser;
 
-uint16_t bpmToBarMs(const int16_t bpm, const uint16_t barDurMs) {
-  return DEFAULT_BPM/bpm*barDurMs;
+uint16_t barToMs(const int16_t bpm, const uint16_t barDur) {
+  return DEFAULT_BPM/bpm*barDur;
 }
 
 void displayOptionsMenu(std::string menuVers="") {
@@ -236,6 +238,7 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..mi<[n]>   range min" << endl;
     cout << "..ma<[n]>   range max" << endl;
     cout << "..*<[n]>    concat phrs" << endl;
+    cout << "../<[n]>    phr dur" << endl;
     cout << "..sp        save phr @ 0" << endl;
     cout << "..sp<[n]>   save phr @ n" << endl;
     cout << "..:<[n]>    load phr @ n" << endl;
@@ -511,7 +514,7 @@ int main(int argc, char **argv) {
                 noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                 midiOut.sendMessage(&noteMessage);
               }
-              std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDurMs/_phrase.size()/subPhrase.size()-iterDur)));
+              std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
               for (auto& notes : subsubPhrase) {  
                 noteMessage[0] = 128+_ch;
                 noteMessage[1] = notes.first;
@@ -530,7 +533,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDurMs/_phrase.size()/subPhrase.size()-iterDur)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
               }
             }
           } else {
@@ -590,12 +593,22 @@ int main(int argc, char **argv) {
           if (opt.length() > strlen("bpm"))
             try {
               bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
-              barDurMs = bpmToBarMs(bpm,REF_BAR_DUR);
+              barDur = barToMs(bpm,REF_BAR_DUR);
             } catch (...) {
               std::cerr << "Invalid bpm." << std::endl;
             }
           else
             std::cout << (int)bpm << '\n';
+      } else if (opt.substr(0,1) == "/") {
+          if (opt.length() > strlen("/"))
+            try {
+              beatsPerPhrase = static_cast<double>(std::stof(opt.substr(1,opt.size()-1)));
+              barDur = barToMs(bpm,beatsPerPhrase*REF_BEAT_DUR*REF_BAR_DUR);
+            } catch (...) {
+              std::cerr << "Invalid phrase duration." << std::endl; 
+            }
+          else
+            std::cout << beatsPerPhrase << '\n';       
       } else if (opt == "ex") {
           phrase.clear();
           soundingThread = true;
