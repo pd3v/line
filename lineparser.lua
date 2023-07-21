@@ -1,3 +1,5 @@
+package.cpath = 'externals/?/lib?.dylib;expernals/?/?.so;' .. package.cpath
+
 local lpeg = require 'lpeg'
 local write = io.write
 lpeg.locale(lpeg)
