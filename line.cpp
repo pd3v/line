@@ -104,7 +104,7 @@ public:
   void reportErrors(lua_State *L, int status) {
     printf("--- %s\n", lua_tostring(L, -1));
     lua_pop(L, 1); // remove error message from Lua's stack
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   
   std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
