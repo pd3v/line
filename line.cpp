@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <chrono>
 #include <future>
@@ -13,13 +14,11 @@
 #include <vector>
 #include <deque>
 #include <stdexcept>
-#include <sstream>
 #include <stdlib.h>
 #include <algorithm>
 #include <tuple>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <thread>
 #include "externals/rtmidi/RtMidi.h"
 
 #if defined(LINK_PLATFORM_UNIX)
@@ -102,6 +101,12 @@ public:
   }
   ~Parser() {lua_close(L);};
   
+  void reportErrors(lua_State *L, int status) {
+    printf("--- %s\n", lua_tostring(L, -1));
+    lua_pop(L, 1); // remove error message from Lua's stack
+    exit(0);
+  }
+  
   std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
     auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) +
      "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
@@ -122,7 +127,7 @@ public:
 
     auto p = parserCode + " t = lpeg.match(phraseG, \"" + _phrase + "\")";
 
-    if (luaL_dostring(L, p.c_str()) == LUA_OK) {
+    if (int luaError = luaL_dostring(L, p.c_str()) == LUA_OK) {
       lua_getglobal(L, "t");
       
       // 3D Lua table to c++ vector
@@ -200,7 +205,9 @@ public:
           lua_pop(L,2);
         }    
       }
-    }
+    } else
+      reportErrors(L, luaError);
+    
     return v;
   }
 } parser;
