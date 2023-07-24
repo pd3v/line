@@ -10,6 +10,15 @@
 7 instances of **line** running simultaneously. 1 for notes, 6 cc. (Using tmux to split macOS terminal into 7 terminals)
 
 ---
+### There's a Mac/Intel build ready
+
++ Just unzip **line_0.4.24_Mac_Intel_build.zip** file
++ Go to the **build** folder, type `./line` and press Enter
+
+### What you need to build *line*
+
++ **readline** library (should be already on your system, if not, you have to install it)
++ **CMake**
 
 <!-- ### Get *line* binaries -->
 
@@ -19,7 +28,7 @@
 
 `git clone --recursive https://github.com/pd3v/line.git`
 
-### To build and run *line* 
+<!--### To build and run *line* 
 
 #### Install lua language and lpeg (used for parsing) first
 
@@ -49,21 +58,22 @@ In command-line, type and Enter:
 
 \* Didn't tried it out -->
 
-
 #### Build and run *line*
 
 (CMake is necessary)
 
-+ Go to *line*'s directory
++ Go to *line*'s folder
 
-In command-line, type and Enter:
+In command-line, type (1. as Admin) and Enter:
 
-`./build.sh`
+1. `./build.sh` 
 
-`./line`
+2. `cd build`
 
-(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)
+3. `./line`
 
+<!--(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)
+-->
 **Now run your favorite synth, sampler, DAW, or other MIDI receiver!**
 
 ## Manual
@@ -227,7 +237,7 @@ from default **line>** to **_my_synth>**, type:
 
 `ms` or `me`
 
-**Set latency:**
+**Set latency:** (ableton link's compatible *line* version only)
 
 subtract 10 ms 
 
