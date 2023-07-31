@@ -1,8 +1,8 @@
 **Most recent upgrades**
 
-. `\` command typed alone returns current set quantum value
+. `\` command typed alone echos current set quantum value
 
-. `ch`, `cc`, `bpm`, `mi` and `ma` commands when typd alone, no value typed after, will return current set value
+. `ch`, `cc`, `bpm`, `mi` and `ma` commands when typd alone, no value typed after, will echos current set value
 
 . Automated loading of a line gig - automated lauching of as much line instances as .line files exist in a directory
 
