@@ -24,7 +24,7 @@
 
 <!-- [macos binaries](https://github.com/pd3v/line/actions/runs/1802392423) -->
 
-### To clone this repo with *rtmidi* submodule included
+### To clone this repo with *rtmidi* and *link* submodules included
 
 `git clone --recursive https://github.com/pd3v/line.git`
 
