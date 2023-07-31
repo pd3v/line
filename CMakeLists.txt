@@ -18,24 +18,6 @@ FIND_PATH(READLINE_INCLUDE_PATH
   PATHS /opt/ /usr/
 )
 
---[[
-if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  SET(LUA_LIB_NAME liblua.a liblua.dylib)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  SET(LUA_LIB_NAME liblua.a liblua.so)
-endif ()
-
-FIND_PATH(LUA_INCLUDE_DIR lua.h
-  /opt/
-  /usr/
-)
-
-FIND_LIBRARY(LUA_LIB_FILE
-  NAMES ${LUA_LIB_NAME}
-  PATHS /opt/ /usr/
-)
-]]
-
 FIND_PATH(READLINE_INCLUDE_PATH
   NAMES readline
   PATHS /opt/ /usr/
@@ -50,7 +32,6 @@ get_filename_component(READLINE_LIB_PATH ${READLINE_LIB_FILE} PATH)
 
 target_include_directories(
   ${PROJECT_NAME} PUBLIC
-#${LUA_INCLUDE_DIR}
   PRIVATE ${READ_HEADER_PATH}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/lua/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/lpeg/
@@ -77,7 +58,6 @@ target_link_libraries(
   LINK_PRIVATE lua
   LINK_PRIVATE lpeg
   LINK_PRIVATE rtmidi
-#LINK_PUBLIC ${LUA_LIB_FILE}
 
   Ableton::Link
 )
