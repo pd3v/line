@@ -1,5 +1,5 @@
 # line
-#### A tiny command-line midi sequencer for live coding.
+<span style ="font-size:12pt;font-weight:bold">A tiny command-line midi sequencer for live coding.</span> (For **ableton link** compatible version go [here](https://github.com/pd3v/line/tree/ableton_link_integration))
 
 + Sends MIDI messages to a chosen MIDI channel. Default is 1.
 
@@ -10,64 +10,70 @@
 7 instances of **line** running simultaneously. 1 for notes, 6 cc. (Using tmux to split macOS terminal into 7 terminals)
 
 ---
+### There's a Mac/Intel build ready
+
++ Just unzip **line_0.4.24_Mac_Intel_build.zip** file
++ Go to the **build** folder, type `./line` and press Enter
+
+### What you need to build *line*
+
++ **readline** library (should be already on your system, if not, you have to install it)
++ **CMake**
 
 <!-- ### Get *line* binaries -->
 
 <!-- [macos binaries](https://github.com/pd3v/line/actions/runs/1802392423) -->
 
-### To clone this repo with *rtmidi*, *rtaudio* and *link* submodules included
+### To clone this repo with *rtmidi* submodule included
 
 `git clone --recursive https://github.com/pd3v/line.git`
 
-### To build and run *line* 
-
-#### Install lua language and lpeg (used for parsing) first
-
-##### MacOS, Linux or Windows 
-
-After installing *[luarocks](https://luarocks.org/#quick-start)* package manager
-
-In command-line, type and Enter:
-
-`luarocks install lpeg` 
-
-<!-- ###### On MacOS with *macports*
+<!--### To build and run *line* 
+ 
+ #### Install lua language and lpeg (used for parsing) first
+ 
+ ##### MacOS, Linux or Windows 
+ 
+ After installing *[luarocks](https://luarocks.org/#quick-start)* package manager
+ 
+ In command-line, type and Enter:
+ 
+ `luarocks install lpeg` 
+ 
+ <!-- ###### On MacOS with *macports*
  
  `port search --name --glob 'lua' ` 
-
-`sudo port install lua @5.3.5` // 5.3.5 or other version
-
-###### On Ubuntu/Debian*
-
-`sudo apt install lua5.3` // 5.3 or other version
-
-###### On Windows* with *Chocolatey*
-
-`choco install lua`
-
-(an alternative for installation would be *Luarocks* package manager)
-
-\* Didn't tried it out -->
-
+ 
+ `sudo port install lua @5.3.5` // 5.3.5 or other version
+ 
+ ###### On Ubuntu/Debian*
+ 
+ `sudo apt install lua5.3` // 5.3 or other version
+ 
+ ###### On Windows* with *Chocolatey*
+ 
+ `choco install lua`
+ 
+ (an alternative for installation would be *Luarocks* package manager)
+ 
+ \* Didn't tried it out -->
 
 #### Build and run *line*
 
 (CMake is necessary)
 
-+ Go to *line*'s directory
++ Go to *line*'s folder
 
-In command-line, type and Enter:
+In command-line, type (1. as Admin) and Enter:
 
-`./build.sh`
+1. `./build.sh` 
 
-`./line`
+2. `cd build`
 
-Or if you have multiple **.line* file in a directory, type and Enter:
+3. `./line`
 
-`./linegig.py`
-
-(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)
-
+<!--(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)
+ -->
 **Now run your favorite synth, sampler, DAW, or other MIDI receiver!**
 
 ## Manual
@@ -114,14 +120,6 @@ channel 2
 120 bpm
 
 `bpm120`
-
-**Set phrase duration (polyrhythm):**  
-
-3 beats per phrase
-
-`\3`
-
-*Note: 4 beats (1/4 note), by default*
 
 **Set a range of values (MIDI default):**
 
@@ -239,10 +237,9 @@ from default **line>** to **_my_synth>**, type:
 
 `ms` or `me`
 
-**Set latency:**
+**Set latency:** (ableton link's compatible *line* version only)
 
 subtract 10 ms 
 
 `lt10`
 
- 
