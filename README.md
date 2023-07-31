@@ -12,7 +12,7 @@
 ---
 ### There's a Mac/Intel build ready
 
-+ Just unzip **line_0.4.24_Mac_Intel_build.zip** file
++ Just unzip **line_0.5.25_ablt_lnk_Mac_Intel_build.zip** file
 + Go to the **build** folder, type `./line` and press Enter
 
 ### What you need to build *line*
