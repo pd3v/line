@@ -1,5 +1,5 @@
 # line
-<span style ="font-size:12pt;font-weight:bold">A tiny command-line midi sequencer for live coding.</span> (For **ableton link** compatible version go [here](https://github.com/pd3v/line/tree/ableton_link_integration))
+<span style ="font-size:12pt;font-weight:bold">A tiny command-line midi sequencer for live coding.</span> <span style ="font-size:10pt">(**ableton link** compatible version)</span>
 
 + Sends MIDI messages to a chosen MIDI channel. Default is 1.
 
