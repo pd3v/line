@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-    line_mac_build:
+    build:
     runs-on: mac-latest
     steps:
     - name: Checkout
