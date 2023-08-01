@@ -22,5 +22,5 @@ jobs:
     - name: Publish macOS Artifact
     - uses: actions/upload-artifact@v2
       with:
-    - name: line v0.4.24 (macOS)
-    - path: build
+        name: line v0.4.24 (macOS)
+        path: build
