@@ -1,18 +1,19 @@
-name: Release Build
+name: line workflow
 
 on:
   push:
-    branches: [develop]
+    branches:
+      - develop
   pull_request:
-    branches: [develop]
-    types: [closed]
+    branches:
+      - develop
+  workflow_dispatch:
 
 jobs:
-  build:
+  line:
     runs-on: mac-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v2
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Create Build Directory
