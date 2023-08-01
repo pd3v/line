@@ -19,8 +19,3 @@ jobs:
       run: git submodule update --init --recursive
     - name: Build
       run: ./build.sh
-    - name: upload
-      uses: actions/upload-artifact@master
-      with:
-        - name: line v0.4.24 (macOS)
-        - path: line
