@@ -11,11 +11,16 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: mac-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v3
     - name: Checkout submodules
       run: git submodule update --init --recursive
-    - name: Create Build Directory
-      run: ls -alh
+    - name: Build
+      run: ./build.sh
+    - name: Publish macOS Artifact
+    - uses: actions/upload-artifact@v2
+      with:
+    - name: line v0.4.24 (macOS)
+    - path: build
