@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-    build:
+  build:
     runs-on: mac-latest
     steps:
     - name: Checkout
@@ -19,4 +19,3 @@ jobs:
       run: git submodule update --init --recursive
     - name: Create Build Directory
       run: ls -alh
-#run: cmake -E make_directory ${{github.workspace}}/build
