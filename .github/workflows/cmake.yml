@@ -10,21 +10,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  line build:
+  build:
     runs-on: mac-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Create Build Directory
-      run: cmake -E make_directory ${{github.workspace}}/build
-    - name: MacOS Configure CMake
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
-    - name: Build line
-      run: cmake --build ./build
-    - name: Publish macOS Artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: line v0.4.24 (macOS)
-        path: build
+      - name: Checkout
+      - uses: actions/checkout@v2
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
+      - name: Create Build Directory
+        run: cmake -E make_directory ${{github.workspace}}/build
+      - name: MacOS Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF -DRTMIDI_BUILD_SHARED_LIBS=OFF
+      - name: Build line
+        run: cmake --build ./build
+      - name: Publish macOS Artifact
+      - uses: actions/upload-artifact@v2
+      - with:
+      - name: line v0.4.24 (macOS)
+      - path: build
