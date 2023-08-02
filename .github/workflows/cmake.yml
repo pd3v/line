@@ -34,7 +34,7 @@ jobs:
   linux_build:
     runs-on: ubuntu-latest
     env:
-      SDL_AUDIODRIVER: "disk"
+      SDL_AUDIODRIVER: "dummy"
     steps:
     - name: Checkout
       uses: actions/checkout@v3
