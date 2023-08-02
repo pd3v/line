@@ -23,4 +23,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: line_v0.4.24_macOS
-        path: build/
+        path: /
