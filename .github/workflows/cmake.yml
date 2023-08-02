@@ -14,13 +14,13 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v3
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Build
       run: ./build.sh
     - name: line macOS Artifact
-      uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v3
       with:
-      - name: line v0.4.24 (macOS)
-      - path: build
+        name: line v0.4.24 (macOS)
+        path: build
