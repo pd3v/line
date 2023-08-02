@@ -1,32 +1,32 @@
 name: line build
 
 on:
-push:
-branches:
-- develop
-pull_request:
-branches:
-- develop
-workflow_dispatch:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
 
 jobs:
-macos_build:
-runs-on: macos-latest
-steps:
-- name: Checkout
-uses: actions/checkout@v3
-- name: Checkout submodules
-run: git submodule update --init --recursive
-- name: Build
-run: ./build.sh
-- name: Remove build-only process files
-run: |
-rm -r ${{github.workspace}}/build/CMakeFiles
-rm ${{github.workspace}}/build/*.cmake
-rm ${{github.workspace}}/build/CMakeCache.txt
-rm ${{github.workspace}}/build/Makefile
-- name: line macOS Artifact
-uses: actions/upload-artifact@v3
-with:
-name: line_v0.5.25_macOS
-path: ${{github.workspace}}/
+  macos_build:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Build
+      run: ./build.sh
+    - name: Remove build-only process files
+      run: |
+        rm -r ${{github.workspace}}/build/CMakeFiles
+        rm ${{github.workspace}}/build/*.cmake
+        rm ${{github.workspace}}/build/CMakeCache.txt
+        rm ${{github.workspace}}/build/Makefile
+    - name: line macOS Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: line_v0.5.25_macOS
+        path: ${{github.workspace}}/
