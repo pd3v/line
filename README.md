@@ -10,10 +10,18 @@
 7 instances of **line** running simultaneously. 1 for notes, 6 cc. (Using tmux to split macOS terminal into 7 terminals)
 
 ---
-### There's a Mac/Intel build ready
+### MacOS ready-to-run builds
+
+#### There's a Mac/M1/M2 build ready
+
++ Just [download](https://github.com/pd3v/line/suites/14757556676/artifacts/839008087) and unzip the file
++ Go to the **build** folder, type `./line` and press Enter
+
+#### There's a Mac/Intel build ready
 
 + Just unzip **line_0.4.24_Mac_Intel_build.zip** file
 + Go to the **build** folder, type `./line` and press Enter
+
 
 ### What you need to build *line*
 
