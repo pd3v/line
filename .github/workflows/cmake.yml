@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  macos build:
+  macos_build:
     runs-on: macos-latest
     steps:
     - name: Checkout
@@ -31,7 +31,7 @@ jobs:
         name: line_v0.4.24_macOS
         path: ${{github.workspace}}/
 
-  linux build:
+  linux_build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
