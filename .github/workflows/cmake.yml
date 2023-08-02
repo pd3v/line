@@ -20,7 +20,7 @@ jobs:
     - name: Build
       run: ./build.sh
     - name: Remove build-only process files
-      run:|
+      run: |
         rm -r /build/CMakeFiles
         rm /build/*.cmake
         rm /build/CMakeCache.txt
