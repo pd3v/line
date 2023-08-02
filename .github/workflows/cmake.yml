@@ -21,10 +21,10 @@ jobs:
       run: ./build.sh
     - name: Remove build-only process files
       run: |
-        rm -r /build/CMakeFiles
-        rm /build/*.cmake
-        rm /build/CMakeCache.txt
-        rm /build/Makefile
+        rm -r ${{github.workspace}}/build/CMakeFiles
+        rm ${{github.workspace}}/build/*.cmake
+        rm ${{github.workspace}}/build/CMakeCache.txt
+        rm ${{github.workspace}}/build/Makefile
     - name: line macOS Artifact
       uses: actions/upload-artifact@v3
       with:
