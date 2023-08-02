@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <stdlib.h>
 #include <algorithm>
+#include <random>
 #include <tuple>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -295,19 +296,22 @@ phraseT reverse(phraseT _phrase) {
 }
 
 phraseT scramble(phraseT _phrase) {
+  uint16_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+
   for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
-    std::random_shuffle(_subPhrase.begin(),_subPhrase.end());
+    std::shuffle(_subPhrase.begin(),_subPhrase.end(),std::default_random_engine(seed));
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
-      std::random_shuffle(_subsubPhrase.begin(),_subsubPhrase.end());
+      std::shuffle(_subsubPhrase.begin(),_subsubPhrase.end(),std::default_random_engine(seed));
     });
   });
 
-  std::random_shuffle(_phrase.begin(),_phrase.end());
+  std::shuffle(_phrase.begin(),_phrase.end(),std::default_random_engine(seed));
 
   return _phrase;
 }
 
 phraseT xscramble(phraseT _phrase) {
+  uint16_t seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::vector<noteAmpT> pattValues {};
 
   for (auto& _subPhrase : _phrase)
@@ -317,7 +321,7 @@ phraseT xscramble(phraseT _phrase) {
       });
     });
 
-  std::random_shuffle(pattValues.begin(),pattValues.end());
+  std::shuffle(pattValues.begin(),pattValues.end(),std::default_random_engine(seed));
   
   for (auto& _subPhrase : _phrase)
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
@@ -327,12 +331,13 @@ phraseT xscramble(phraseT _phrase) {
       });
     });
     
-  std::random_shuffle(_phrase.begin(),_phrase.end());
+  std::shuffle(_phrase.begin(),_phrase.end(),std::default_random_engine(seed));
 
   return _phrase;
 }
 
 phraseT scrambleAmp(phraseT _phrase) {
+  uint16_t seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::vector<float> amps{};
   auto idx = 0;
 
@@ -343,7 +348,7 @@ phraseT scrambleAmp(phraseT _phrase) {
       });
     });
 
-    std::random_shuffle(amps.begin(),amps.end());
+    std::shuffle(amps.begin(),amps.end(),std::default_random_engine(seed));
 
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {  
       for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {    
@@ -359,6 +364,7 @@ phraseT scrambleAmp(phraseT _phrase) {
 }
 
 phraseT xscrambleAmp() {
+  uint16_t seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::vector<float> amps{};
   auto cnt = 0;
 
@@ -366,7 +372,7 @@ phraseT xscrambleAmp() {
      amps.emplace_back(_noteAmp.second);
   });
      
-  std::random_shuffle(amps.begin(),amps.end());
+  std::shuffle(amps.begin(),amps.end(),std::default_random_engine(seed));
 
   _phrase = map([&](auto& _noteAmp){
     _noteAmp.second = amps.at(cnt);
