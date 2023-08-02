@@ -1,4 +1,4 @@
-name: line workflow
+name: line build
 
 on:
   push:
