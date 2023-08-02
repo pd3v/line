@@ -19,6 +19,12 @@ jobs:
       run: git submodule update --init --recursive
     - name: Build
       run: ./build.sh
+    - name: Remove build-only process files
+      run:|
+        rm -r /build/CMakeFiles
+        rm /build/*.cmake
+        rm /build/CMakeCache.txt
+        rm /build/Makefile
     - name: line macOS Artifact
       uses: actions/upload-artifact@v3
       with:
