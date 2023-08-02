@@ -1,4 +1,4 @@
-name: line build
+name: line abl_lnk build
 
 on:
   push:
