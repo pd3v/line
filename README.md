@@ -1,4 +1,4 @@
-# line
+# line [![line build macOS](https://github.com/pd3v/line/actions/workflows/cmake.yml/badge.svg)](https://github.com/pd3v/line/actions/workflows/cmake.yml)</span>
 <span style ="font-size:12pt;font-weight:bold">A tiny command-line midi sequencer for live coding.</span> <span style ="font-size:10pt">(**ableton link** compatible version)</span>
 
 + Sends MIDI messages to a chosen MIDI channel. Default is 1.
@@ -10,7 +10,14 @@
 7 instances of **line** running simultaneously. 1 for notes, 6 cc. (Using tmux to split macOS terminal into 7 terminals)
 
 ---
-### There's a Mac/Intel build ready
+### MacOS ready-to-run builds
+
+#### There's a Mac/M1/M2 build ready
+
++ Just [download](https://github.com/pd3v/line/) and unzip the file
++ Go to the **build** folder, type `./line` and press Enter
+
+#### There's a Mac/Intel build ready
 
 + Just unzip **line_0.5.25_ablt_lnk_Mac_Intel_build.zip** file
 + Go to the **build** folder, type `./line` and press Enter
