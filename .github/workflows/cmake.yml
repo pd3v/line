@@ -3,10 +3,10 @@ name: line abl_lnk build
 on:
   push:
     branches:
-      - develop
+      - ableton_link_integration
   pull_request:
     branches:
-      - develop
+      - ableton_link_integration
   workflow_dispatch:
 
 jobs:
