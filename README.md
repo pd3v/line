@@ -25,6 +25,7 @@
 ### What you need to build *line*
 
 + **readline** library (should be already on your system, if not, you have to install it)
++ **jack** library (**only** for Linux. It is not installed by default. If the computer has no audio/music production sofware succefully used then a *jack* installation is needed)
 + **CMake**
 
 <!-- ### Get *line* binaries -->
