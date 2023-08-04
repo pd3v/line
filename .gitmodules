@@ -2,9 +2,9 @@
 	path = externals/rtmidi
 	url = https://github.com/thestk/rtmidi.git
 
-#[submodule "externals/link"]
-#	path = externals/link
-#	url = https://github.com/Ableton/link.git
+[submodule "externals/link"]
+	path = externals/link
+	url = https://github.com/Ableton/link.git
 
 #[submodule "rtaudio"]
 #	path = externals/rtaudio
