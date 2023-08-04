@@ -28,5 +28,5 @@ jobs:
     - name: line macOS Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: line_v0.5.25_macOS
+        name: line_v0.5.26_macOS
         path: ${{github.workspace}}/

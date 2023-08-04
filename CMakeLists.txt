@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19.2)
 
 set (CMAKE_CXX_STANDARD 17)
 
-project(line VERSION 0.5.25)
+project(line VERSION 0.5.26)
     
 add_executable("${PROJECT_NAME}" line.cpp)
 
