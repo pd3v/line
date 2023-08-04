@@ -14,7 +14,7 @@
 
 #### There's a Mac/M1/M2 build ready
 
-+ Just [download](https://github.com/pd3v/line/) and unzip the file
++ Go to [Actions page](https://github.com/pd3v/line/actions/runs/5764314590), to section *Artifacts*, download and unzip the file
 + Go to the **build** folder, type `./line` and press Enter
 
 #### There's a Mac/Intel build ready
