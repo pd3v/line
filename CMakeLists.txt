@@ -18,11 +18,6 @@ FIND_PATH(READLINE_INCLUDE_PATH
   PATHS /opt/ /usr/
 )
 
-FIND_PATH(READLINE_INCLUDE_PATH
-  NAMES readline
-  PATHS /opt/ /usr/
-)
-
 FIND_LIBRARY(READLINE_LIB_FILE
   NAMES readline
   PATHS /opt/ /usr/
