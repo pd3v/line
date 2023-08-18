@@ -1,11 +1,11 @@
 # line [![line build macOS](https://github.com/pd3v/line/actions/workflows/cmake.yml/badge.svg)](https://github.com/pd3v/line/actions/workflows/cmake.yml)</span>
 <span style ="font-size:12pt;font-weight:bold">A tiny command-line midi sequencer for live coding.</span> <span style ="font-size:10pt">(**ableton link** compatible version)</span> <span style ="font-size:11pt">
 
-[To some videos live coding with it go.](https://twitter.com/search?q=%23linelivecoding&src=hashtag_click&f=live)<span style ="font-size:8pt">(twitter).</span>
-
 + Sends MIDI messages to a chosen MIDI channel. Default is 1.
 
 + 1 instrument or 1 CC
+
+To some videos live coding with it [go here.](https://twitter.com/search?q=%23linelivecoding&src=hashtag_click&f=live)<span style ="font-size:8pt">(twitter)</span>
 
 <img src="https://github.com/pd3v/line/blob/develop/line 0.4.3 (7 running).png" alt="7 instances of **line** running simultaneously. 1 synth. 6 cc." style="width:60%;height:60%"/>
 
