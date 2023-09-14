@@ -463,8 +463,6 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
 
         while (std::getline(file,_phrase))
           prefPhrases.push_back(_phrase.c_str());
-        
-        file.close();
 
         std::cout << "File loaded.\n";
       } else throw std::runtime_error("");
@@ -798,7 +796,6 @@ int main(int argc, char **argv) {
              << filename << '\n' << std::to_string(range.first) << '\n' << std::to_string(range.second) << "\n\n";
 
             for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _phraseStr){outfile << _phraseStr << "\n";});
-            outfile.close();
 
             std::cout << "File " + filename + " saved.\n";
           } catch (...) {
@@ -833,8 +830,6 @@ int main(int argc, char **argv) {
 
               while (std::getline(file,_phrase))
                 prefPhrases.push_back(_phrase.c_str());
-              
-              file.close();
 
               std::cout << "File loaded.\n";
             } else throw std::runtime_error("");
