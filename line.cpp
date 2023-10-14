@@ -41,13 +41,13 @@ const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.26";
+const std::string VERSION = "0.5.27";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
-std::string filenameDefault = "line";
+const long ITER_DUR = 5; // milliseconds
 
-const long iterDur = 5; // milliseconds
+std::string filenameDefault = "line";
 
 double bpm = DEFAULT_BPM;
 double quantum;
@@ -62,7 +62,7 @@ struct State {
   std::atomic<bool> running;
   ableton::Link link;
   ableton::linkaudio::AudioPlatform audioPlatform;
-  
+
   State(): running(true),link(DEFAULT_BPM),audioPlatform(link){}
 };
 
@@ -92,7 +92,7 @@ class Parser {
   std::string musicStructType;
 
   noteAmpT retreiveNoteAmp() const {
-    lua_next(L,-2);      
+    lua_next(L,-2);
     lua_pushnil(L);
 
     lua_next(L,-2);
@@ -104,17 +104,17 @@ class Parser {
     lua_pop(L,1);
     return {note,amp};
   }
-  
+
   void musicStructNumIter() {
-    lua_next(L,-2);      
+    lua_next(L,-2);
     lua_pushnil(L);
     subtableSize = lua_rawlen(L,-2);
 
     lua_next(L,-2);
     musicStructType = lua_tostring(L,-1);
-    lua_pop(L,1);    
+    lua_pop(L,1);
 
-    lua_next(L,-2);      
+    lua_next(L,-2);
     lua_pushnil(L);
     subsubtableSize = lua_rawlen(L,-2);
   }
@@ -129,25 +129,25 @@ public:
     parserCode = textBuffer.str();
   }
   ~Parser() {lua_close(L);};
-  
-  void reportErrors(lua_State *L, int status) {
+
+  void reportLuaErrorsOnExit(lua_State *L, int status) {
     printf("--- %s\n", lua_tostring(L, -1));
     lua_pop(L, 1); // remove error message from Lua's stack
     exit(EXIT_FAILURE);
   }
-  
+
   std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
     auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) +
      "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
-    
+
     if (int luaError = luaL_dostring(L, parseRange.c_str()) == LUA_OK) {
       lua_getglobal(L,"rs");
-      
+
       if (lua_isstring(L,-1))
         _phrase = lua_tostring(L,-1);
     } else
-        reportErrors(L, luaError);
-    
+        reportLuaErrorsOnExit(L, luaError);
+
     return _phrase;
   }
 
@@ -156,25 +156,25 @@ public:
     std::vector<std::vector<noteAmpT>> subv{};
     std::vector<noteAmpT> subsubv{};
 
-    auto p = parserCode + " t = lpeg.match(phraseG, \"" + _phrase + "\")";
+    auto p = parserCode + " phrs_matching = lpeg.match(phraseG, \"" + _phrase +
+    "\"); t = phrs_matching and phrs_matching or NO_MATCH";
 
     if (int luaError = luaL_dostring(L, p.c_str()) == LUA_OK) {
       lua_getglobal(L, "t");
-      
+
       // 3D Lua table to c++ vector
       if (lua_istable(L,-1)) {
         lua_pushnil(L);
         lua_gettable(L,-2);
         tableSize = lua_rawlen(L,-2);
         int8_t note, amp;
-      
+
         for (int i=0; i<tableSize; ++i) {
           musicStructNumIter();
 
           if (musicStructType == "n") {
             for (int i=0; i<subsubtableSize; ++i) {
               std::tie(note,amp) = retreiveNoteAmp();
-
               subsubv.push_back({note,amp});
               subv.push_back(subsubv);
               v.push_back(subv);
@@ -184,33 +184,33 @@ public:
             }
           } else if (musicStructType == "s") {
               size_t _stabsize = lua_rawlen(L,-2);
-              
+
               for (int i=0; i<_stabsize; ++i) {
                 musicStructNumIter();
 
                 if (musicStructType == "n") {
                   for (int i=0; i<subsubtableSize; ++i) {
                     std::tie(note,amp) = retreiveNoteAmp();
-                    
+
                     subsubv.push_back({note,amp});
-                    subv.push_back(subsubv);  
+                    subv.push_back(subsubv);
                     subsubv.clear();
                     lua_pop(L,2);
                   }
                 }
 
                 if (musicStructType == "c") {
-                  for (int i=0; i<subsubtableSize; ++i) {                
-                    std::tie(note,amp) = retreiveNoteAmp(); 
+                  for (int i=0; i<subsubtableSize; ++i) {
+                    std::tie(note,amp) = retreiveNoteAmp();
 
                     subsubv.push_back({note,amp});
                     lua_pop(L,2);
                   }
 
-                  subv.push_back(subsubv);  
+                  subv.push_back(subsubv);
                   subsubv.clear();
                 }
-              
+
                 lua_pop(L,2);
                 lua_pop(L,2);
               }
@@ -219,26 +219,31 @@ public:
               subv.clear();
               subsubv.clear();
           } else if (musicStructType == "c") {
-              for (int i=0; i<subsubtableSize; ++i) {                
+              for (int i=0; i<subsubtableSize; ++i) {
                 std::tie(note,amp) = retreiveNoteAmp();
 
                 subsubv.push_back({note,amp});
                 lua_pop(L,2);
               }
 
-              subv.push_back(subsubv);  
+              subv.push_back(subsubv);
               v.push_back(subv);
               subsubv.clear();
               subv.clear();
+          } else if (musicStructType == "e") {
+              for (int i=0; i<subsubtableSize; ++i)
+                lua_pop(L,2);
+
+              v.clear();
           }
 
           lua_pop(L,2);
           lua_pop(L,2);
-        }    
+        }
       }
     } else
-        reportErrors(L, luaError);
-    
+        reportLuaErrorsOnExit(L, luaError);
+
     return v;
   }
 } parser;
@@ -258,7 +263,7 @@ void displayOptionsMenu(std::string menuVers="") {
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
-  
+
   if (menuVers == "me") {
     cout << "..cc<[n]>   cc ch mode" << endl;
     cout << "..n         notes mode" << endl;
@@ -280,7 +285,7 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..lf<name>  load .line file" << endl;
   }
   cout << "----------------------" << endl;
-  
+
   if (int r = rand()%5 == 1) cout << "          author:pd3v" << endl;
 }
 
@@ -316,13 +321,13 @@ phraseT reverse(phraseT _phrase) {
       std::reverse(_subsubPhrase.begin(),_subsubPhrase.end());
     });
   });
-  
+
   return _phrase;
 }
 
 phraseT scramble(phraseT _phrase) {
   uint16_t seed = std::chrono::system_clock::now().time_since_epoch().count();
-  
+
   for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
     std::shuffle(_subPhrase.begin(),_subPhrase.end(),std::default_random_engine(seed));
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
@@ -338,7 +343,7 @@ phraseT scramble(phraseT _phrase) {
 phraseT xscramble(phraseT _phrase) {
   uint16_t seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::vector<noteAmpT> pattValues {};
-  
+
 
   for (auto& _subPhrase : _phrase)
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
@@ -348,7 +353,7 @@ phraseT xscramble(phraseT _phrase) {
     });
 
   std::shuffle(pattValues.begin(),pattValues.end(),std::default_random_engine(seed));
-  
+
   for (auto& _subPhrase : _phrase)
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
       for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _v) {
@@ -356,7 +361,7 @@ phraseT xscramble(phraseT _phrase) {
         pattValues.pop_back();
       });
     });
-    
+
   std::shuffle(_phrase.begin(),_phrase.end(),std::default_random_engine(seed));
 
   return _phrase;
@@ -376,11 +381,11 @@ phraseT scrambleAmp(phraseT _phrase) {
 
     std::shuffle(amps.begin(),amps.end(),std::default_random_engine(seed));
 
-    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {  
-      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {    
+    for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
+      for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _noteAmp) {
         _noteAmp.second = amps.at(idx);
       });
-      ++idx;  
+      ++idx;
     });
     amps.clear();
     idx = 0;
@@ -397,7 +402,7 @@ phraseT xscrambleAmp() {
   auto _phrase = map([&](auto& _noteAmp){
      amps.emplace_back(_noteAmp.second);
   });
-     
+
   std::shuffle(amps.begin(),amps.end(),std::default_random_engine(seed));
 
   _phrase = map([&](auto& _noteAmp){
@@ -410,11 +415,11 @@ phraseT xscrambleAmp() {
 
 phraseT replicate(phraseT _phrase,uint8_t times) {
   phraseT nTimesPhrase = _phrase;
-  
+
   for(int n = 0;n < times-1;++n) {
     for_each(_phrase.begin(),_phrase.end(),[&](auto& _subPhrase) {
       nTimesPhrase.push_back(_subPhrase);
-    });  
+    });
   }
 
   return nTimesPhrase;
@@ -430,14 +435,14 @@ void bpmLink(double _bpm) {
   bpm = _bpm;
   barDur = barToMs(_bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
 }
- 
+
 std::string prompt = PROMPT;
 
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
   // line args order: notes/cc ch label range_min range_max
   std::tuple<bool,uint8_t,const char*,float,float> lineParams{true,0,PROMPT,0,127};
 
-  if (argc == 2) { // Maybe a loadable .line file 
+  if (argc == 2) { // Maybe a loadable .line file
     try {
       std::string filename = argv[1];
       std::ifstream file(filename + ".line");
@@ -447,7 +452,7 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
         std::string param;
         std::string _phrase;
         uint8_t countParams = 0;
-        
+
         // [ load line instance params
         while (std::getline(file,param) && countParams < 5) {
           ++countParams;
@@ -473,7 +478,7 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
     auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
     std::string _prompt(argv[3]);
     _prompt = PREPEND_CUSTOM_PROMPT+_prompt+">";
-    
+
     if (argc == 6) {
       try {
         lineParams = {notesOrCC,std::stoi(argv[2],nullptr),strcpy(new char[_prompt.length()+1],_prompt.c_str()),std::stoi(argv[4],nullptr),std::stoi(argv[5],nullptr)};
@@ -496,25 +501,28 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
   return lineParams;
 }
 
-void parsePhrase(std::string& _phrase) {
+bool parsePhrase(std::string& _phrase) {
   phraseT tempPhrase{};
   phraseStr = _phrase;
 
   if (range.first != 0 || range.second != 127)
     tempPhrase = parser.parsing(parser.rescaling(_phrase,range));
-  else       
+  else
     tempPhrase = parser.parsing(_phrase);
 
   if (!tempPhrase.empty()) {
-    phrase = tempPhrase;
+    phrase = std::move(tempPhrase);
     add_history(_phrase.c_str());
-  }
+  } else
+    return false;
+
+  return true;
 }
 
 int main(int argc, char **argv) {
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
-  
+
   std::vector<uint8_t> noteMessage;
   bool rNotes;
   uint8_t ch=0,ccCh=0,tempCh;
@@ -524,10 +532,10 @@ int main(int argc, char **argv) {
   bool sync = true;
   std::string opt;
   float latency = 0;
-  
+
   std::mutex mtxWait, mtxPhrase;
   std::condition_variable cv;
-    
+
   bool soundingThread = false;
   bool exit = false;
   bool syntaxError = false;
@@ -539,11 +547,11 @@ int main(int argc, char **argv) {
   state.link.setTempoCallback(bpmLink);
 
   barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
-    
+
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   noteMessage.push_back(0);
-  
+
   auto sequencer = async(std::launch::async, [&](){
     double toNextBar = 0;
     unsigned long partial = 0;
@@ -553,7 +561,7 @@ int main(int argc, char **argv) {
     bool _rNotes = rNotes;
     long _barDur = barDur;
     auto _quantum = quantum;
-      
+
     const std::chrono::microseconds time = state.link.clock().micros();
     // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
     const bool linkEnabled = state.link.isEnabled();
@@ -562,27 +570,27 @@ int main(int argc, char **argv) {
     const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
     // const double late = state.audioPlatform.mEngine.outputLatency; // just a reminder of latency info available in engine
 
-    // waiting for live coder's first phrase 
+    // waiting for live coder's first phrase
     std::unique_lock<std::mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return soundingThread == true;});
     std::lock_guard<std::mutex> lckPhrase(mtxPhrase);
-    
+
     state.link.enable(true);
-    
+
     while (soundingThread) {
       const std::chrono::microseconds time = state.link.clock().micros();
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
       const auto beats = sessionState.beatAtTime(time, quantum);
       const auto phase = sessionState.phaseAtTime(time, quantum);
       toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01)-(latency*0.001); // :TODO A better aproach. Works on low lantencies
-      
+
       if (!phrase.empty()) {
         _phrase = phrase;
         _ch = ch;
         _ccCh = ccCh;
         _rNotes = rNotes;
         _barDur = barDur;
-        
+
         if (_rNotes) {
           if (phase >= toNextBar || _quantum < quantum) {
             _quantum = quantum;
@@ -594,8 +602,8 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(_barDur/_phrase.size()/subPhrase.size()-iterDur)));
-                for (auto& notes : subsubPhrase) {  
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(_barDur/_phrase.size()/subPhrase.size()-ITER_DUR)));
+                for (auto& notes : subsubPhrase) {
                   noteMessage[0] = 128+_ch;
                   noteMessage[1] = notes.first;
                   noteMessage[2] = 0;
@@ -615,7 +623,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(_barDur/_phrase.size()/subPhrase.size()-iterDur)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(_barDur/_phrase.size()/subPhrase.size()-ITER_DUR)));
               }
             }
           } else if (!sync) {
@@ -626,13 +634,13 @@ int main(int argc, char **argv) {
                   noteMessage[1] = _ccCh;
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
-                } 
+                }
                 std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
               }
             }
-          } 
+          }
       } else break;
-    }     
+    }
     return "line is off.\n";
   });
 
@@ -640,7 +648,7 @@ int main(int argc, char **argv) {
 
   while (!exit) {
     opt = readline(prompt.c_str());
-    
+
     if (!opt.empty()) {
       if (opt == "ms") {
         displayOptionsMenu("");
@@ -655,7 +663,7 @@ int main(int argc, char **argv) {
               std::cerr << "Invalid channel.\n";
             }
           else
-            std::cout << (int)ch << '\n';  
+            std::cout << (int)ch << '\n';
       } else if (opt == "n") {
           rNotes = true;
           phrase.clear();
@@ -667,10 +675,10 @@ int main(int argc, char **argv) {
               rNotes = false;
             }
             catch (...) {
-              std::cerr << "Invalid cc channel." << std::endl; 
+              std::cerr << "Invalid cc channel." << std::endl;
             }
           else
-            std::cout << (int)ccCh << '\n';  
+            std::cout << (int)ccCh << '\n';
       } else if (opt.substr(0,3) == "bpm") {
           if (opt.length() > strlen("bpm"))
             try {
@@ -680,17 +688,17 @@ int main(int argc, char **argv) {
               std::cerr << "Invalid bpm." << std::endl;
             }
           else
-            std::cout << bpm << '\n';    
+            std::cout << bpm << '\n';
       } else if (opt.substr(0,1) == "/") {
           if (opt.length() > strlen("/"))
             try {
               quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1)));
               barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
             } catch (...) {
-              std::cerr << "Invalid phrase duration." << std::endl; 
+              std::cerr << "Invalid phrase duration." << std::endl;
             }
           else
-            std::cout << quantum << '\n';        
+            std::cout << quantum << '\n';
       } else if (opt == "ex") {
           phrase.clear();
           soundingThread = true;
@@ -702,21 +710,21 @@ int main(int argc, char **argv) {
             auto newAmp = std::stof(opt.substr(2,opt.size()-1));
             phrase = map([&](auto& _n){_n.second != 0 ? _n.second *= (newAmp*0.01) : _n.second = newAmp;});
           } catch (...) {
-            std::cerr << "Invalid amplitude." << std::endl; 
+            std::cerr << "Invalid amplitude." << std::endl;
           }
       } else if (opt == "m") {
           mute();
       } else if (opt == "um") {
           unmute();
-      } else if (opt == "r") {    
+      } else if (opt == "r") {
           phrase = reverse(phrase);
-      } else if (opt == "s") {    
+      } else if (opt == "s") {
           phrase = scramble(phrase);
-      } else if (opt == "sa") {    
+      } else if (opt == "sa") {
           phrase = scrambleAmp(phrase);
-      } else if (opt == "x") {    
+      } else if (opt == "x") {
           phrase = xscramble(phrase);
-      } else if (opt == "xa") {    
+      } else if (opt == "xa") {
           phrase = xscrambleAmp();
        } else if (opt == "sp") {
           prefPhrases.push_front(phraseStr);
@@ -725,8 +733,8 @@ int main(int argc, char **argv) {
           try {
             prefPhrases.at(std::stof(opt.substr(2,opt.size()-1))) = phraseStr;
           } catch (...) {
-            std::cerr << "Invalid phrase slot." << std::endl; 
-          }   
+            std::cerr << "Invalid phrase slot." << std::endl;
+          }
       } else if (opt.substr(0,2) == "lp" || opt.substr(0,1) == ":") {
           try {
             auto cmdLen = opt.substr(0,1) == ":" ? 1 : 2;
@@ -735,47 +743,47 @@ int main(int argc, char **argv) {
             soundingThread = true;
             cv.notify_one();
           } catch (...) {
-            std::cerr << "Invalid phrase slot." << std::endl; 
+            std::cerr << "Invalid phrase slot." << std::endl;
           }
       } else if (opt == "l") {
         uint8_t i = 0;
         for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _p) {
           std::cout << "[" << (int)i++ << "] " << _p << std::endl;
-        });  
-      } else if (opt == "i") {    
+        });
+      } else if (opt == "i") {
           sync= true;
-      } else if (opt == "o") {    
+      } else if (opt == "o") {
           sync= false;
       } else if (opt.substr(0,2) == "mi") {
-          if (opt.length() > strlen("mi"))    
+          if (opt.length() > strlen("mi"))
             try {
               range.first = std::stof(opt.substr(2,opt.size()-1));
             } catch (...) {
-              std::cerr << "Invalid range min." << std::endl; 
+              std::cerr << "Invalid range min." << std::endl;
             }
           else
-            std::cout << range.first << '\n';  
-      } else if (opt.substr(0,2) == "ma") {    
+            std::cout << range.first << '\n';
+      } else if (opt.substr(0,2) == "ma") {
           if (opt.length() > strlen("ma"))
             try {
               range.second = std::stof(opt.substr(2,opt.size()-1));
             } catch (...) {
-              std::cerr << "Invalid range max." << std::endl; 
+              std::cerr << "Invalid range max." << std::endl;
             }
           else
             std::cout << range.second << '\n';
-      } else if (opt.substr(0,1) == "*") {    
+      } else if (opt.substr(0,1) == "*") {
           try {
             auto times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));
 
             if (times == 0)
-              throw std::runtime_error(""); 
-          
+              throw std::runtime_error("");
+
             phrase = replicate(phrase,times);
           } catch (...) {
-            std::cerr << "Invalid phrase replication." << std::endl; 
-          }        
-      } else if (opt.substr(0,2) == "lb") {    
+            std::cerr << "Invalid phrase replication." << std::endl;
+          }
+      } else if (opt.substr(0,2) == "lb") {
           // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
           prompt = PROMPT;
 
@@ -799,7 +807,7 @@ int main(int argc, char **argv) {
 
             std::cout << "File " + filename + " saved.\n";
           } catch (...) {
-            std::cerr << "Invalid filename." << std::endl; 
+            std::cerr << "Invalid filename." << std::endl;
           }
       } else if (opt.substr(0,2) == "lf") {
           try {
@@ -814,7 +822,7 @@ int main(int argc, char **argv) {
               uint8_t countParams = 0;
 
               prefPhrases.clear();
-              
+
               // [ load line instance params
               while (std::getline(file,param) && countParams < 5) {
                 ++countParams;
@@ -834,23 +842,24 @@ int main(int argc, char **argv) {
               std::cout << "File loaded.\n";
             } else throw std::runtime_error("");
           } catch (...) {
-            std::cerr << "Couldn't load file." << std::endl; 
+            std::cerr << "Couldn't load file." << std::endl;
           }
-      } else if (opt.substr(0,2) == "lt") {    
+      } else if (opt.substr(0,2) == "lt") {
           try {
             latency = std::stof(opt.substr(2,opt.size()-1));
           } catch (...) {
-            std::cerr << "Invalid latency." << std::endl; 
+            std::cerr << "Invalid latency." << std::endl;
           }
       } else {
         // it's a phrase, if it's not a command
-        parsePhrase(opt);
+        if (auto err = !parsePhrase(opt))
+          std::cout << "Unknown symbol.\n";
 
         soundingThread = true;
         cv.notify_one();
       }
     }
   }
-  
+
   return 0;
 }

@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.19.2)
 
 set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_COMPILER /opt/local/libexec/llvm-10/bin/clang)
+set(CMAKE_CXX_COMPILER /opt/local/libexec/llvm-10/bin/clang++)
 
-project(line VERSION 0.5.26)
-    
+project(line VERSION 0.5.27)
+
 add_executable("${PROJECT_NAME}" line.cpp)
 
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/readline)
@@ -43,7 +45,7 @@ target_link_directories(
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/src/ableton/link/
 )
 
-target_compile_definitions(${PROJECT_NAME} 
+target_compile_definitions(${PROJECT_NAME}
   PRIVATE -DLINKHUT_AUDIO_PLATFORM_DUMMY=1
 )
 
