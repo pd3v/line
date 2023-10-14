@@ -4,7 +4,7 @@ set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_COMPILER /opt/local/libexec/llvm-10/bin/clang)
 set(CMAKE_CXX_COMPILER /opt/local/libexec/llvm-10/bin/clang++)
 
-project(line VERSION 0.5.27)
+project(line VERSION 0.5.28)
 
 add_executable("${PROJECT_NAME}" line.cpp)
 
