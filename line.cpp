@@ -41,7 +41,7 @@ const uint16_t REF_BAR_DUR = 4000; // milliseconds
 const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.28";
+const std::string VERSION = "0.5.29";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint8_t CTRL_RATE = 100; // milliseconds
@@ -534,7 +534,7 @@ int main(int argc, char **argv) {
   std::mutex mtxWait, mtxPhrase;
   std::condition_variable cv;
 
-  bool soundingThread = false;
+  bool isSoundingThread = false;
   bool exit = false;
   bool syntaxError = false;
 
@@ -570,12 +570,12 @@ int main(int argc, char **argv) {
 
     // waiting for live coder's first phrase
     std::unique_lock<std::mutex> lckWait(mtxWait);
-    cv.wait(lckWait, [&](){return soundingThread == true;});
+    cv.wait(lckWait, [&](){return !phrase.empty() && isSoundingThread;});
     std::lock_guard<std::mutex> lckPhrase(mtxPhrase);
 
     state.link.enable(true);
 
-    while (soundingThread) {
+    while (isSoundingThread) {
       const std::chrono::microseconds time = state.link.clock().micros();
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
       const auto beats = sessionState.beatAtTime(time, quantum);
@@ -699,7 +699,7 @@ int main(int argc, char **argv) {
             std::cout << quantum << '\n';
       } else if (opt == "ex") {
           phrase.clear();
-          soundingThread = true;
+          isSoundingThread = true;
           cv.notify_one();
           std::cout << sequencer.get();
           exit = true;
@@ -738,7 +738,7 @@ int main(int argc, char **argv) {
             auto cmdLen = opt.substr(0,1) == ":" ? 1 : 2;
             parsePhrase(prefPhrases.at(std::stof(opt.substr(cmdLen,opt.size()-1))));
 
-            soundingThread = true;
+            isSoundingThread = true;
             cv.notify_one();
           } catch (...) {
             std::cerr << "Invalid phrase slot." << std::endl;
@@ -853,7 +853,7 @@ int main(int argc, char **argv) {
         if (auto err = !parsePhrase(opt))
           std::cout << "Unknown symbol.\n";
 
-        soundingThread = true;
+        isSoundingThread = true;
         cv.notify_one();
       }
     }
