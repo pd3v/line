@@ -37,15 +37,15 @@ using noteAmpT = std::pair<uint8_t,uint8_t>;
 using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 
 const float DEFAULT_BPM = 60.0;
-const uint16_t REF_BAR_DUR = 4000; // milliseconds
+const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.29";
+const std::string VERSION = "0.5.30";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
-const uint8_t CTRL_RATE = 100; // milliseconds
-const long ITER_DUR = 5; // milliseconds
+const uint64_t CTRL_RATE = 100000; // microseconds
+const long ITER_DUR = 4000; // microseconds
 
 std::string filenameDefault = "line";
 
@@ -423,11 +423,12 @@ phraseT replicate(phraseT _phrase,uint8_t times) {
   return nTimesPhrase;
 }
 
-const uint16_t barToMs(const double _bpm, const uint16_t barDur) {
+// const uint16_t barToMs(const double _bpm, const uint16_t barDur) {
+const uint64_t barToMs(const double _bpm, const uint64_t barDur) {
   return DEFAULT_BPM/bpm*barDur;
 }
 
-long barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
+uint64_t barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
 
 void bpmLink(double _bpm) {
   bpm = _bpm;
@@ -499,6 +500,13 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
   return lineParams;
 }
 
+inline long long subPhraseDur(uint64_t& _barDur, phraseT& _phrase, int64_t& _phraseElapsedTime) {
+  if (_barDur / _phrase.size() - _phraseElapsedTime < 0)
+    return _barDur / _phrase.size() - (_phraseElapsedTime - _barDur / _phrase.size());
+  else
+    return _barDur / _phrase.size();
+}
+
 bool parsePhrase(std::string& _phrase) {
   phraseT tempPhrase{};
   phraseStr = _phrase;
@@ -557,8 +565,11 @@ int main(int argc, char **argv) {
     uint8_t _ch = ch;
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
-    long _barDur = barDur;
+    uint64_t _barDur = barDur;
     auto _quantum = quantum;
+    std::chrono::microseconds phraseStartTime;
+    std::chrono::microseconds phraseEndTime;
+    int64_t phraseElapsedTime = 0;
 
     const std::chrono::microseconds time = state.link.clock().micros();
     // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
@@ -570,7 +581,7 @@ int main(int argc, char **argv) {
 
     // waiting for live coder's first phrase
     std::unique_lock<std::mutex> lckWait(mtxWait);
-    cv.wait(lckWait, [&](){return !phrase.empty() && isSoundingThread;});
+    cv.wait(lckWait, [&](){return isSoundingThread;});
     std::lock_guard<std::mutex> lckPhrase(mtxPhrase);
 
     state.link.enable(true);
@@ -580,7 +591,8 @@ int main(int argc, char **argv) {
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
       const auto beats = sessionState.beatAtTime(time, quantum);
       const auto phase = sessionState.phaseAtTime(time, quantum);
-      toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01)-(latency*0.001); // :TODO A better aproach. Works on low lantencies
+      // toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01)-(latency*0.001); // :TODO A better aproach. Works on low lantencies
+      toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01);
 
       if (!phrase.empty()) {
         _phrase = phrase;
@@ -588,11 +600,13 @@ int main(int argc, char **argv) {
         _ccCh = ccCh;
         _rNotes = rNotes;
         _barDur = barDur;
-
+        
         if (_rNotes) {
-          if (phase >= toNextBar || _quantum < quantum) {
-            _quantum = quantum;
+          if (phase >= toNextBar) {
+            // _quantum = quantum;
             for (auto& subPhrase : _phrase) {
+              phraseStartTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
+              
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& notes : subsubPhrase) {
                   noteMessage[0] = 144+_ch;
@@ -600,7 +614,8 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(_barDur/_phrase.size()/subPhrase.size()-ITER_DUR)));
+                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - ITER_DUR)));
+                
                 for (auto& notes : subsubPhrase) {
                   noteMessage[0] = 128+_ch;
                   noteMessage[1] = notes.first;
@@ -608,12 +623,14 @@ int main(int argc, char **argv) {
                   midiOut.sendMessage(&noteMessage);
                 }
               }
+              phraseEndTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
+              phraseElapsedTime = static_cast<long long>(phraseEndTime.count()) - static_cast<long long>(phraseStartTime.count());
             }
           }
         } else
-          if (phase >= toNextBar || _quantum < quantum) {
-            _quantum = quantum;
+          if (phase >= toNextBar) {
             for (auto& subPhrase : _phrase) {
+              phraseStartTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& ccValues : subsubPhrase) {
                   noteMessage[0] = 176+_ch;
@@ -621,8 +638,10 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(_barDur/_phrase.size()/subPhrase.size()-ITER_DUR)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - ITER_DUR)));
               }
+              phraseEndTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
+              phraseElapsedTime = static_cast<long long>(phraseEndTime.count()) - static_cast<long long>(phraseStartTime.count());
             }
           } else if (!sync) {
             for (auto& subPhrase : _phrase) {
@@ -646,7 +665,7 @@ int main(int argc, char **argv) {
 
   while (!exit) {
     opt = readline(prompt.c_str());
-
+    
     if (!opt.empty()) {
       if (opt == "ms") {
         displayOptionsMenu("");
@@ -861,3 +880,4 @@ int main(int argc, char **argv) {
 
   return 0;
 }
+  
