@@ -633,7 +633,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - (ITER_DUR - ((log2(phrase.size()) - 2) * 240))));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - (ITER_DUR - ((log2(phrase.size()) - 2) * 240)))));
               }
               phraseEndTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
               phraseElapsedTime = static_cast<long long>(phraseEndTime.count()) - static_cast<long long>(phraseStartTime.count());
