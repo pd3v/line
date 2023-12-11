@@ -153,6 +153,12 @@ concat phrase 4x
 
 `*4`
 
+**Set phrase duration n times:**
+
+Increase phrase duration 8x 
+
+`/8`
+
 **Mute and unmute:**
 
 `m` and `um`

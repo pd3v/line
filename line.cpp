@@ -41,7 +41,7 @@ const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.30";
+const std::string VERSION = "0.5.31";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint64_t CTRL_RATE = 100000; // microseconds
@@ -566,13 +566,10 @@ int main(int argc, char **argv) {
     uint8_t _ccCh = ccCh;
     bool _rNotes = rNotes;
     uint64_t _barDur = barDur;
-    auto _quantum = quantum;
     std::chrono::microseconds phraseStartTime;
     std::chrono::microseconds phraseEndTime;
     int64_t phraseElapsedTime = 0;
 
-    const std::chrono::microseconds time = state.link.clock().micros();
-    // const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
     const bool linkEnabled = state.link.isEnabled();
     const std::size_t numPeers = state.link.numPeers();
     quantum = state.audioPlatform.mEngine.quantum();
@@ -589,11 +586,10 @@ int main(int argc, char **argv) {
     while (isSoundingThread) {
       const std::chrono::microseconds time = state.link.clock().micros();
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
-      const auto beats = sessionState.beatAtTime(time, quantum);
-      const auto phase = sessionState.phaseAtTime(time, quantum);
-      // toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01)-(latency*0.001); // :TODO A better aproach. Works on low lantencies
+      // const auto beats = sessionState.beatAtTime(time, quantum);
+      auto phase = sessionState.phaseAtTime(time, quantum);
       toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01);
-
+      
       if (!phrase.empty()) {
         _phrase = phrase;
         _ch = ch;
@@ -603,7 +599,6 @@ int main(int argc, char **argv) {
         
         if (_rNotes) {
           if (phase >= toNextBar) {
-            // _quantum = quantum;
             for (auto& subPhrase : _phrase) {
               phraseStartTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
               
@@ -614,7 +609,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - ITER_DUR)));
+                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - (ITER_DUR - ((log2(phrase.size()) - 2) * 240)))));
                 
                 for (auto& notes : subsubPhrase) {
                   noteMessage[0] = 128+_ch;
@@ -638,7 +633,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - ITER_DUR)));
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - (ITER_DUR - ((log2(phrase.size()) - 2) * 240))));
               }
               phraseEndTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
               phraseElapsedTime = static_cast<long long>(phraseEndTime.count()) - static_cast<long long>(phraseStartTime.count());
@@ -709,10 +704,11 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,1) == "/") {
           if (opt.length() > strlen("/"))
             try {
-              quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1)));
+              // quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1)));
+              quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1))) * phrase.size();
               barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
-            } catch (...) {
-              std::cerr << "Invalid phrase duration." << std::endl;
+            } catch (...) { 
+                std::cerr << "Invalid phrase duration." << std::endl;
             }
           else
             std::cout << quantum << '\n';

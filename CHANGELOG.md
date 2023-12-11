@@ -1,6 +1,16 @@
 **Most recent upgrades**
 
-. `\` command typed alone echos current set quantum value
+. New meaning to `/x` command. Phrase duration spreads out "x" times.
+
+. Improve sync
+
+. Fix some parser pattern matching
+
+____
+
+## 0.5.29
+
+. `/` command typed alone echos current set quantum value
 
 . `ch`, `cc`, `bpm`, `mi` and `ma` commands when typd alone, no value typed after, will echos current set value
 
