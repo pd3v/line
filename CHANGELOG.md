@@ -1,6 +1,6 @@
 **Most recent upgrades**
 
-. New meaning to `/x` command. Phrase duration spreads out "x" times.
+. New meaning to `/` command. Eg. `/8`, phrase duration will be 8 times longer.
 
 . Improve sync
 

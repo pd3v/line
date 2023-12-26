@@ -423,16 +423,15 @@ phraseT replicate(phraseT _phrase,uint8_t times) {
   return nTimesPhrase;
 }
 
-// const uint16_t barToMs(const double _bpm, const uint16_t barDur) {
-const uint64_t barToMs(const double _bpm, const uint64_t barDur) {
-  return DEFAULT_BPM/bpm*barDur;
+const uint64_t barToMs(const double _bpm, const uint64_t _barDur) {
+  return DEFAULT_BPM / _bpm * _barDur;
 }
 
-uint64_t barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
+uint64_t barDur = barToMs(DEFAULT_BPM, REF_BAR_DUR);
 
 void bpmLink(double _bpm) {
   bpm = _bpm;
-  barDur = barToMs(_bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
+  barDur = barToMs(_bpm, REF_BAR_DUR);
 }
 
 std::string prompt = PROMPT;
@@ -507,6 +506,10 @@ inline long long subPhraseDur(uint64_t& _barDur, phraseT& _phrase, int64_t& _phr
     return _barDur / _phrase.size();
 }
 
+inline float iterDur() {
+  return ITER_DUR - (phrase.size() >= 4 ? (log2(phrase.size()) - 2) * 240 : 0);
+}
+
 bool parsePhrase(std::string& _phrase) {
   phraseT tempPhrase{};
   phraseStr = _phrase;
@@ -552,15 +555,12 @@ int main(int argc, char **argv) {
   state.link.enable(!state.link.isEnabled());
   state.link.setTempoCallback(bpmLink);
 
-  barDur = barToMs(DEFAULT_BPM,REF_BAR_DUR);
-
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   noteMessage.push_back(0);
 
   auto sequencer = async(std::launch::async, [&](){
     double toNextBar = 0;
-    unsigned long partial = 0;
     phraseT _phrase{};
     uint8_t _ch = ch;
     uint8_t _ccCh = ccCh;
@@ -601,7 +601,6 @@ int main(int argc, char **argv) {
           if (phase >= toNextBar) {
             for (auto& subPhrase : _phrase) {
               phraseStartTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
-              
               for (auto& subsubPhrase : subPhrase) {
                 for (auto& notes : subsubPhrase) {
                   noteMessage[0] = 144+_ch;
@@ -609,7 +608,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - (ITER_DUR - ((log2(phrase.size()) - 2) * 240)))));
+                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - iterDur())));
                 
                 for (auto& notes : subsubPhrase) {
                   noteMessage[0] = 128+_ch;
@@ -633,7 +632,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - (ITER_DUR - ((log2(phrase.size()) - 2) * 240)))));
+                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - iterDur())));
               }
               phraseEndTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
               phraseElapsedTime = static_cast<long long>(phraseEndTime.count()) - static_cast<long long>(phraseStartTime.count());
@@ -647,7 +646,7 @@ int main(int argc, char **argv) {
                   noteMessage[2] = ccValues.first;
                   midiOut.sendMessage(&noteMessage);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
+                std::this_thread::sleep_for(std::chrono::microseconds(CTRL_RATE));
               }
             }
           }
@@ -696,6 +695,7 @@ int main(int argc, char **argv) {
             try {
               bpm = static_cast<double>(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
               engine.setTempo(bpm);
+              barDur = barToMs(bpm, REF_BAR_DUR);
             } catch (...) {
               std::cerr << "Invalid bpm." << std::endl;
             }
@@ -704,9 +704,8 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,1) == "/") {
           if (opt.length() > strlen("/"))
             try {
-              // quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1)));
-              quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1))) * phrase.size();
-              barDur = barToMs(bpm,quantum*REF_QUANTUM*REF_BAR_DUR);
+              quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1)));
+              barDur = barToMs(bpm, quantum * REF_BAR_DUR);
             } catch (...) { 
                 std::cerr << "Invalid phrase duration." << std::endl;
             }
@@ -764,9 +763,9 @@ int main(int argc, char **argv) {
           std::cout << "[" << (int)i++ << "] " << _p << std::endl;
         });
       } else if (opt == "i") {
-          sync= true;
+          sync = true;
       } else if (opt == "o") {
-          sync= false;
+          sync = false;
       } else if (opt.substr(0,2) == "mi") {
           if (opt.length() > strlen("mi"))
             try {
