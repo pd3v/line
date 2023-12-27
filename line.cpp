@@ -41,7 +41,7 @@ const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.31";
+const std::string VERSION = "0.5.34";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint64_t CTRL_RATE = 100000; // microseconds
@@ -49,7 +49,7 @@ const long ITER_DUR = 4000; // microseconds
 
 std::string filenameDefault = "line";
 
-double bpm = DEFAULT_BPM;
+double bpm = DEFAULT_BPM, nextBpm = DEFAULT_BPM;
 double quantum;
 float amplitude = 127.;
 bool muted = false;
@@ -274,7 +274,8 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..xa        x amp     " << endl;
     cout << "..mi<[n]>   range min" << endl;
     cout << "..ma<[n]>   range max" << endl;
-    cout << "..*<[n]>    concat phrs" << endl;
+    cout << "..*<[n]>    concat phr" << endl;
+    cout << "../<[n]>    prolong phr" << endl;
     cout << "..sp        save phr @ 0" << endl;
     cout << "..sp<[n]>   save phr @ n" << endl;
     cout << "..:<[n]>    load phr @ n" << endl;
@@ -587,6 +588,11 @@ int main(int argc, char **argv) {
       const std::chrono::microseconds time = state.link.clock().micros();
       const ableton::Link::SessionState sessionState = state.link.captureAppSessionState();
       // const auto beats = sessionState.beatAtTime(time, quantum);
+      if (nextBpm != bpm) {
+        engine.setTempo(nextBpm);
+        barDur = barToMs(nextBpm, REF_BAR_DUR);
+        bpm = nextBpm;
+      }
       auto phase = sessionState.phaseAtTime(time, quantum);
       toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01);
       
@@ -693,9 +699,7 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,3) == "bpm") {
           if (opt.length() > strlen("bpm"))
             try {
-              bpm = static_cast<double>(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
-              engine.setTempo(bpm);
-              barDur = barToMs(bpm, REF_BAR_DUR);
+              nextBpm = static_cast<double>(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
             } catch (...) {
               std::cerr << "Invalid bpm." << std::endl;
             }
@@ -720,7 +724,7 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,2) == "am") {
           try {
             auto newAmp = std::stof(opt.substr(2,opt.size()-1));
-            phrase = map([&](auto& _n){_n.second != 0 ? _n.second *= (newAmp*0.01) : _n.second = newAmp;});
+            phrase = map([&](auto& _n){_n.second != 0 ? _n.second *= (newAmp*0.01) : _n.second = newAmp * 1.27;});
           } catch (...) {
             std::cerr << "Invalid amplitude." << std::endl;
           }

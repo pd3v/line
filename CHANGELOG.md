@@ -1,5 +1,7 @@
 **Most recent upgrades**
 
+. Snap BPM change to the next playing phrase (and not the current one).
+
 . New meaning to `/` command. Eg. `/8`, phrase duration will be 8 times longer.
 
 . Improve sync
