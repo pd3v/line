@@ -28,7 +28,7 @@ jobs:
     - name: line macOS Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: line_v0.5.34_macOS
+        name: line_v0.5.35_macOS
         path: ${{github.workspace}}/
   linux_build:
       runs-on: ubuntu-latest
@@ -48,5 +48,5 @@ jobs:
       - name: line linux Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: line_v0.5.34_linux
+          name: line_v0.5.35_linux
           path: ${{github.workspace}}/
