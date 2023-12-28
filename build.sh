@@ -10,3 +10,7 @@ cmake -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTAUDIO_API_JACK=OFF -D
 # cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DRTMIDI_BUILD_TESTING=OFF ..
 
 make
+
+# Remove unnecessary files after build done
+rm -r externals/ 
+rm -rf CMakeLists.txt build.sh line.cpp
