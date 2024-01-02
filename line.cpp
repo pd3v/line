@@ -41,7 +41,7 @@ const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 0.25; // 1/4
 const char *PROMPT = "line>";
 const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.5.35";
+const std::string VERSION = "0.5.36";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint64_t CTRL_RATE = 100000; // microseconds
@@ -440,7 +440,7 @@ std::string prompt = PROMPT;
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
   // line args order: notes/cc ch label range_min range_max
   std::tuple<bool,uint8_t,const char*,float,float> lineParams{true,0,PROMPT,0,127};
-
+  
   if (argc == 2) { // Maybe a loadable .line file
     try {
       std::string filename = argv[1];
@@ -458,16 +458,17 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
           params.push_back(param);
         }
 
-        lineParams = {(params.at(0) == "0" ? false : true),std::stoi(params.at(1)),
-          (PREPEND_CUSTOM_PROMPT+params.at(2)+">").c_str(),
+        auto labelAsPrompt = (params.at(2) + ">");
+        lineParams = std::make_tuple((params.at(0) == "0" ? false : true),std::stoi(params.at(1)),
+          std::move(labelAsPrompt.c_str()),
           std::stof(params.at(3)),
           std::stof(params.at(4))
-        };
+        );
         // --- ]
-
+        
         while (std::getline(file,_phrase))
           prefPhrases.push_back(_phrase.c_str());
-
+        
         std::cout << "File loaded.\n";
       } else throw std::runtime_error("");
     } catch(...) {
@@ -476,7 +477,7 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
   } else if (argc > 3) {
     auto notesOrCC = (strcmp(argv[1],"n") == 0 ? true:false);
     std::string _prompt(argv[3]);
-    _prompt = PREPEND_CUSTOM_PROMPT+_prompt+">";
+    _prompt = _prompt+">";
 
     if (argc == 6) {
       try {
@@ -590,8 +591,6 @@ int main(int argc, char **argv) {
       // const auto beats = sessionState.beatAtTime(time, quantum);
 
       engine.setTempo(bpm);
-      barDur = barToMs(bpm, REF_BAR_DUR);
-      
       auto phase = sessionState.phaseAtTime(time, quantum);
       toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01);
       
@@ -699,6 +698,7 @@ int main(int argc, char **argv) {
           if (opt.length() > strlen("bpm"))
             try {
               bpm = static_cast<double>(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
+              barDur = barToMs(bpm, REF_BAR_DUR);
             } catch (...) {
               std::cerr << "Invalid bpm." << std::endl;
             }
@@ -804,14 +804,14 @@ int main(int argc, char **argv) {
 
           if (opt.length() > 2) {
             std::string _prompt =  PROMPT;
-            prompt = PREPEND_CUSTOM_PROMPT+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
+            prompt = opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
             filenameDefault = opt.substr(2,opt.length()-1);
           }
       } else if (opt.substr(0,2) == "sf") {
           try {
             auto filename = opt.substr(2,opt.size()-1);
 
-            if (filename.empty()) filename = (prompt != PROMPT ? prompt.substr(1,prompt.length()-2) : filenameDefault);
+            if (filename.empty()) filename = (prompt != PROMPT ? prompt.substr(0,prompt.length()-1) : filenameDefault);
             std::ofstream outfile (filename + ".line");
 
             // line instance params
@@ -827,6 +827,7 @@ int main(int argc, char **argv) {
       } else if (opt.substr(0,2) == "lf") {
           try {
             auto filename = opt.substr(2,opt.size()-1);
+            std::cout << filename << '\n';
             if (filename.empty()) filename = filenameDefault;
             std::ifstream file(filename + ".line");
 
@@ -846,7 +847,7 @@ int main(int argc, char **argv) {
 
               std::istringstream(params.at(0)) >> rNotes;
               (rNotes) ? ch = std::stoi(params.at(1)) : ccCh = std::stoi(params.at(1));
-              prompt = PREPEND_CUSTOM_PROMPT+params.at(2)+">";
+              prompt = params.at(2)+">";
               range.first = std::stof(params.at(3));
               range.second = std::stof(params.at(4));
               // --- ]
