@@ -502,7 +502,7 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
 }
 
 inline long long subPhraseDur(uint64_t& _barDur, phraseT& _phrase, int64_t& _phraseElapsedTime) {
-  if (_barDur / _phrase.size() - _phraseElapsedTime < 0)
+  if (static_cast<int>(_barDur / _phrase.size() - _phraseElapsedTime) < 0)
     return _barDur / _phrase.size() - (_phraseElapsedTime - _barDur / _phrase.size());
   else
     return _barDur / _phrase.size();
