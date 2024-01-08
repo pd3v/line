@@ -35,11 +35,11 @@ get_filename_component(READLINE_LIB_PATH ${READLINE_LIB_FILE} PATH)
 
 target_include_directories(
   ${PROJECT_NAME} PUBLIC
-  PRIVATE ${READ_HEADER_PATH}
+  PRIVATE ${READLINE_INCLUDE_PATH}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/lua/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/lpeg/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/include/ableton/
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/include/ableton/
 )
 
 target_link_directories(
@@ -48,7 +48,7 @@ target_link_directories(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/lua/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/lpeg/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/rtmidi/
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/link/src/ableton/link/
+  #PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/link/src/ableton/link/
 )
 
 target_compile_definitions(${PROJECT_NAME}
@@ -61,6 +61,5 @@ target_link_libraries(
   LINK_PRIVATE lua
   LINK_PRIVATE lpeg
   LINK_PRIVATE rtmidi
-
   Ableton::Link
 )
