@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.19.2)
 
-set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
+if(APPLE)
+  #set(CMAKE_C_COMPILER /usr/bin/clang)
+  #set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+
+  set(CMAKE_C_COMPILER /opt/local/libexec/llvm-10/bin/clang)
+  set(CMAKE_CXX_COMPILER /opt/local/libexec/llvm-10/bin/clang++)
+endif(APPLE)
+
+if(LINUX)
+  set(CMAKE_C_COMPILER /usr/bin/gcc)
+  set(CMAKE_CXX_COMPILER /usr/bin/g++)
+endif(LINUX)
 
 project(line VERSION 0.5.36)
 
@@ -38,8 +50,8 @@ target_link_directories(
   PRIVATE ${READLINE_LIB_PATH}/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/lua/
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/lpeg/
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/externals/rtmidi/
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externals/link/src/ableton/link/
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/rtmidi/
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/link/src/ableton/link/
 )
 
 target_compile_definitions(${PROJECT_NAME}
