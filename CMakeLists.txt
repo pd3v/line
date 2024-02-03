@@ -13,7 +13,7 @@ if(LINUX)
   set(CMAKE_CXX_COMPILER /usr/bin/g++)
 endif(LINUX)
 
-project(line VERSION 0.5.36)
+project(line VERSION 0.5.37)
 
 add_executable("${PROJECT_NAME}" line.cpp)
 
