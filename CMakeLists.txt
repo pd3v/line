@@ -9,8 +9,8 @@ if(APPLE)
 endif(APPLE)
 
 if(LINUX)
-  set(CMAKE_C_COMPILER /usr/bin/gcc)
-  set(CMAKE_CXX_COMPILER /usr/bin/g++)
+  #set(CMAKE_C_COMPILER /usr/bin/gcc)
+  #set(CMAKE_CXX_COMPILER /usr/bin/g++)
 endif(LINUX)
 
 project(line VERSION 0.6)
