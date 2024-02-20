@@ -4,16 +4,16 @@ set(CMAKE_CXX_STANDARD 17)
 if(APPLE)
   #set(CMAKE_C_COMPILER /usr/bin/clang)
   #set(CMAKE_CXX_COMPILER /usr/bin/clang++)
-  #set(CMAKE_C_COMPILER /opt/local/libexec/llvm-10/bin/clang)
-  #set(CMAKE_CXX_COMPILER /opt/local/libexec/llvm-10/bin/clang++)
+  set(CMAKE_C_COMPILER /opt/local/libexec/llvm-10/bin/clang)
+  set(CMAKE_CXX_COMPILER /opt/local/libexec/llvm-10/bin/clang++)
 endif(APPLE)
 
 if(LINUX)
-  set(CMAKE_C_COMPILER /usr/bin/gcc)
-  set(CMAKE_CXX_COMPILER /usr/bin/g++)
+  #set(CMAKE_C_COMPILER /usr/bin/gcc)
+  #set(CMAKE_CXX_COMPILER /usr/bin/g++)
 endif(LINUX)
 
-project(line VERSION 0.5.37)
+project(line VERSION 0.6)
 
 add_executable("${PROJECT_NAME}" line.cpp)
 

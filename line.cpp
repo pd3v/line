@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <random>
 #include <tuple>
+#include <atomic>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
@@ -40,7 +41,7 @@ const float DEFAULT_BPM = 60.0;
 const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 4; // 1 bar
 const char *PROMPT = "line>";
-const std::string VERSION = "0.5.37";
+const std::string VERSION = "0.6";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint64_t CTRL_RATE = 100000; // microseconds
@@ -51,6 +52,7 @@ std::string filenameDefault = "line";
 double bpm = DEFAULT_BPM;
 double quantum;
 float amplitude = 127.;
+uint8_t ch=0, ccCh=0;
 bool muted = false;
 std::pair<float,float> range{0,127};
 phraseT phrase{};
@@ -245,7 +247,61 @@ public:
   }
 } parser;
 
-void displayOptionsMenu(std::string menuVers="") {
+struct MidiEvent {
+  std::vector<noteAmpT> notes;
+  float startTime;
+  float endTime;
+  float currentTime;
+	bool isPlaying = false;
+  float timeOffset = 0.02;
+  
+  void notesPlayStop(const float& _currentTime, std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
+    currentTime = _currentTime;
+
+    if (_currentTime >= (startTime == 0 ? 0 : (startTime - timeOffset)) && _currentTime <= (startTime + timeOffset) && !isPlaying) {
+      for (auto& note : notes) {
+        _message[0] = 0x90 + ch;
+        _message[1] = note.first;
+        _message[2] = ((note.first == REST_VAL) || muted) ? 0 : note.second;
+        _midiOut.sendMessage(&_message);
+      }  
+      isPlaying = true;
+    } else if (_currentTime >= (endTime - timeOffset) && _currentTime <= (endTime + timeOffset) && isPlaying) {
+        for (auto& note : notes) {
+          _message[0] = 0x80 + ch;
+          _message[1] = note.first;
+          _message[2] = 0;
+          _midiOut.sendMessage(&_message);
+        }
+        isPlaying = false;
+    }
+  }
+
+  void ccPlayStop(const float& _currentTime, std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
+    currentTime = _currentTime;
+
+    if (_currentTime >= (startTime == 0 ? 0 : (startTime - timeOffset)) && _currentTime <= (startTime + timeOffset))
+      for (auto& cc : notes) {
+        _message[0] = 0xB0 + ch;
+        _message[1] = ccCh;
+        _message[2] = ((cc.first == REST_VAL) || muted) ? 0 : cc.first;
+        _midiOut.sendMessage(&_message);
+      }
+  }
+
+  void stop(std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
+    for (auto& note : notes) {
+      _message[0] = 0x80 + ch;
+      _message[1] = note.first;
+      _message[2] = 0;
+      _midiOut.sendMessage(&_message);
+    }
+  }
+};
+
+std::vector<MidiEvent> midiEvents;
+
+void displayCommandsList(std::string listVers="") {
   using namespace std;
   cout << "----------------------" << endl;
   cout << "  line " << VERSION << " midi seq  " << endl;
@@ -253,15 +309,15 @@ void displayOptionsMenu(std::string menuVers="") {
   cout << "..<[n] >    phrase    " << endl;
   cout << "..bpm<[n]>  bpm       " << endl;
   cout << "..ch<[n]>   midi ch   " << endl;
-  cout << "..ms        this menu " << endl;
-  cout << "..me        extnd menu" << endl;
+  cout << "..ls        this list " << endl;
+  cout << "..le        extnd list" << endl;
   cout << "..ex        exit      " << endl;
   cout << "..am<[n]>   amplitude " << endl;
   cout << "..r         reverse   " << endl;
   cout << "..s         scramble  " << endl;
   cout << "..x         xscramble " << endl;
 
-  if (menuVers == "me") {
+  if (listVers == "le") {
     cout << "..cc<[n]>   cc ch mode" << endl;
     cout << "..n         notes mode" << endl;
     cout << "..m         mute      " << endl;
@@ -271,6 +327,9 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..lb<[a|n]> label     " << endl;
     cout << "..sa        s amp     " << endl;
     cout << "..xa        x amp     " << endl;
+    cout << "..ga        gen amps" << endl;
+    cout << "..rl<[n]>   rotate left" << endl;
+    cout << "..rr<[n]>   rotate right" << endl;
     cout << "..mi<[n]>   range min" << endl;
     cout << "..ma<[n]>   range max" << endl;
     cout << "..*<[n]>    concat phr" << endl;
@@ -279,12 +338,12 @@ void displayOptionsMenu(std::string menuVers="") {
     cout << "..sp<[n]>   save phr @ n" << endl;
     cout << "..:<[n]>    load phr @ n" << endl;
     cout << "..l         list sp phrs" << endl;
-    cout << "..sf<name>  save .line file" << endl;
-    cout << "..lf<name>  load .line file" << endl;
+    cout << "..sf<name>  save file" << endl;
+    cout << "..lf<name>  load file" << endl;
   }
   cout << "----------------------" << endl;
 
-  if (int r = rand()%5 == 1) cout << "          author:pd3v" << endl;
+  if (/*int r = */rand()%5 == 1) cout << "          author:pd3v" << endl;
 }
 
 void amp(float& amplitude) {
@@ -422,6 +481,26 @@ phraseT xscrambleAmp() {
   return _phrase;
 }
 
+phraseT genAmp(phraseT _phrase) {
+  _phrase = map([&](auto& noteAmp){
+    noteAmp.second = rand() % 92 + 10;
+  });
+
+  return _phrase;
+}
+
+phraseT rotateLeft(phraseT _phrase, uint8_t jump=1) {
+  std::rotate(_phrase.begin(), _phrase.begin() + jump, _phrase.end());
+  
+  return _phrase;
+}
+
+phraseT rotateRight(phraseT _phrase, int jump=1) {
+  std::rotate(_phrase.rbegin(), _phrase.rbegin() + jump, _phrase.rend());
+  
+  return _phrase;
+}
+
 phraseT replicate(phraseT _phrase,uint8_t times) {
   phraseT nTimesPhrase = _phrase;
 
@@ -511,17 +590,6 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
   return lineParams;
 }
 
-inline long long subPhraseDur(uint64_t& _barDur, phraseT& _phrase, int64_t& _phraseElapsedTime) {
-  if (static_cast<int>(_barDur / _phrase.size() - _phraseElapsedTime) < 0)
-    return _barDur / _phrase.size() - (_phraseElapsedTime - _barDur / _phrase.size());
-  else
-    return _barDur / _phrase.size();
-}
-
-inline float iterDur() {
-  return ITER_DUR - (phrase.size() >= 4 ? (log2(phrase.size()) - 2) * 240 : 0);
-}
-
 bool parsePhrase(std::string& _phrase) {
   phraseT tempPhrase{};
   phraseStr = _phrase;
@@ -540,13 +608,46 @@ bool parsePhrase(std::string& _phrase) {
   return true;
 }
 
+void danglingMidiEvents(std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
+  for (int i = 0; i < 128; ++i) {
+    _message[0] = 0x80 + ch;
+    _message[1] = i;
+    _message[2] = 0;
+    _midiOut.sendMessage(&_message);
+  }
+}
+
+void timeStamping(phraseT _phrase) {  
+  std::vector<MidiEvent> _midiEvents;
+  std::vector<noteAmpT>_notes;
+  float incr = 0;
+  float _phase = 0;
+  float barD = barToMs(bpm, REF_BAR_DUR) / 1'000'000;
+  float subBarD = barD / _phrase.size() * 1.0;
+  
+  for (auto& subPhrase : _phrase) {
+    for (auto& subsubPhrase : subPhrase) {      
+      incr = quantum * (1.0 / _phrase.size() / subPhrase.size());
+      
+      for (auto& notes : subsubPhrase)
+        _notes.emplace_back(notes);
+      
+      _midiEvents.emplace_back((MidiEvent){_notes, _phase, static_cast<float>(_phase + incr - 0.001)});
+      _notes.clear();
+      _phase += incr;
+    }
+  }
+
+  midiEvents = std::move(_midiEvents);
+}
+
 int main(int argc, char **argv) {
   auto midiOut = RtMidiOut();
   midiOut.openPort(0);
 
   std::vector<uint8_t> noteMessage;
   bool rNotes;
-  uint8_t ch=0,ccCh=0,tempCh;
+  uint8_t tempCh;
   std::tie(rNotes,tempCh,prompt,range.first,range.second) = lineParamsOnStart(argc,argv);
 
   if (rNotes) ch = tempCh; else ccCh = tempCh; // ouch!
@@ -559,7 +660,6 @@ int main(int argc, char **argv) {
 
   bool isSoundingThread = false;
   bool exit = false;
-  bool syntaxError = false;
 
   State state;
   const auto tempo = state.link.captureAppSessionState().tempo();
@@ -567,20 +667,14 @@ int main(int argc, char **argv) {
   state.link.enable(!state.link.isEnabled());
   state.link.setTempoCallback(bpmLink);
 
+  noteMessage.push_back(0x80);
   noteMessage.push_back(0);
   noteMessage.push_back(0);
-  noteMessage.push_back(0);
-
+  
   auto sequencer = async(std::launch::async, [&](){
-    double toNextBar = 0;
     phraseT _phrase{};
-    uint8_t _ch = ch;
-    uint8_t _ccCh = ccCh;
-    bool _rNotes = rNotes;
-    uint64_t _barDur = barDur;
-    std::chrono::microseconds phraseStartTime;
-    std::chrono::microseconds phraseEndTime;
-    int64_t phraseElapsedTime = 0;
+    double toNextBar = 0;
+    std::vector<MidiEvent> _midiEvents;
 
     const bool linkEnabled = state.link.isEnabled();
     const std::size_t numPeers = state.link.numPeers();
@@ -601,87 +695,42 @@ int main(int argc, char **argv) {
       // const auto beats = sessionState.beatAtTime(time, quantum);
 
       auto phase = sessionState.phaseAtTime(time, quantum);
-      toNextBar = ceil(quantum)-(pow(bpm,0.2)*0.01);
-      
-      if (!phrase.empty()) {
-        _phrase = phrase;
-        _ch = ch;
-        _ccCh = ccCh;
-        _rNotes = rNotes;
-        _barDur = barDur;
+      toNextBar = ceil(quantum) - (pow(bpm,0.2) * 0.005);
 
-        if (_rNotes) {
-          if (phase >= toNextBar) {
-            for (auto& subPhrase : _phrase) {
-              phraseStartTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
-              for (auto& subsubPhrase : subPhrase) {
-                for (auto& notes : subsubPhrase) {
-                  noteMessage[0] = 144+_ch;
-                  noteMessage[1] = notes.first;
-                  noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
-                  midiOut.sendMessage(&noteMessage);
-                }
-                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - iterDur())));
-                
-                for (auto& notes : subsubPhrase) {
-                  noteMessage[0] = 128+_ch;
-                  noteMessage[1] = notes.first;
-                  noteMessage[2] = 0;
-                  midiOut.sendMessage(&noteMessage);
-                }
-              }
-              phraseEndTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
-              phraseElapsedTime = static_cast<long long>(phraseEndTime.count()) - static_cast<long long>(phraseStartTime.count());
-            }
-          }
-        } else
-          if (phase >= toNextBar) {
-            for (auto& subPhrase : _phrase) {
-              phraseStartTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
-              for (auto& subsubPhrase : subPhrase) {
-                for (auto& ccValues : subsubPhrase) {
-                  noteMessage[0] = 176+_ch;
-                  noteMessage[1] = _ccCh;
-                  noteMessage[2] = ccValues.first;
-                  midiOut.sendMessage(&noteMessage);
-                }
-                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(subPhraseDur(_barDur, _phrase, phraseElapsedTime) / subPhrase.size() - iterDur())));
-              }
-              phraseEndTime = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()).time_since_epoch();
-              phraseElapsedTime = static_cast<long long>(phraseEndTime.count()) - static_cast<long long>(phraseStartTime.count());
-            }
-          } else if (!sync) {
-            for (auto& subPhrase : _phrase) {
-              for (auto& subsubPhrase : subPhrase) {
-                for (auto& ccValues : subsubPhrase) {
-                  noteMessage[0] = 176+_ch;
-                  noteMessage[1] = _ccCh;
-                  noteMessage[2] = ccValues.first;
-                  midiOut.sendMessage(&noteMessage);
-                }
-                std::this_thread::sleep_for(std::chrono::microseconds(CTRL_RATE));
-              }
-            }
-          }
+      if(!phrase.empty()) {
+        if (phase >= toNextBar) {
+          _midiEvents = midiEvents;
+          danglingMidiEvents(noteMessage, midiOut);
+        }
+
+        if (rNotes)
+          for_each(_midiEvents.begin(), _midiEvents.end(), [&](MidiEvent& _midiEvent){_midiEvent.notesPlayStop(phase, noteMessage, midiOut);});
+        else
+          for_each(_midiEvents.begin(), _midiEvents.end(), [&](MidiEvent& _midiEvent){_midiEvent.ccPlayStop(phase, noteMessage, midiOut);});
+
+        std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(4000)));
       } else break;
     }
+    for_each(midiEvents.begin(), midiEvents.end(), [&](MidiEvent& _midiEvent){_midiEvent.stop(noteMessage, midiOut);});
+    
     return "line is off.\n";
   });
 
-  std::cout << "line " << VERSION << " is on." << std::endl;
+  std::cout << "line " << VERSION << " is on." << std::endl << "Type \"ls\" for commands short list; \"le\" for extended." << std::endl;
 
   while (!exit) {
     opt = readline(prompt.c_str());
     
     if (!opt.empty()) {
-      if (opt == "ms") {
-        displayOptionsMenu("");
-      } else if (opt == "me") {
-        displayOptionsMenu(opt);
+      if (opt == "ls") {
+        displayCommandsList("");
+      } else if (opt == "le") {
+        displayCommandsList(opt);
       } else if (opt.substr(0,2) == "ch") {
           if (opt.length() > strlen("ch"))
             try {
               ch = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+              timeStamping(phrase);
             }
             catch (...) {
               std::cerr << "Invalid channel.\n";
@@ -720,6 +769,8 @@ int main(int argc, char **argv) {
             try {
               quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1))) * REF_QUANTUM;
               barDur = barToMs(bpm, quantum / REF_QUANTUM * REF_BAR_DUR);
+        
+              timeStamping(phrase);
             } catch (...) { 
                 std::cerr << "Invalid phrase duration." << std::endl;
             }
@@ -735,6 +786,7 @@ int main(int argc, char **argv) {
           try {
             auto newAmp = std::stof(opt.substr(2,opt.size()-1));
             phrase = map([&](auto& _n){_n.second != 0 ? _n.second *= (newAmp*0.01) : _n.second = newAmp * 1.27;});
+            timeStamping(phrase);
           } catch (...) {
             std::cerr << "Invalid amplitude." << std::endl;
           }
@@ -744,15 +796,45 @@ int main(int argc, char **argv) {
           unmute();
       } else if (opt == "r") {
           phrase = reverse(phrase);
+          timeStamping(phrase);
       } else if (opt == "s") {
           phrase = scramble(phrase);
+          timeStamping(phrase);
       } else if (opt == "sa") {
           phrase = scrambleAmp(phrase);
+          timeStamping(phrase);
       } else if (opt == "x") {
           phrase = xscramble(phrase);
+          timeStamping(phrase);
       } else if (opt == "xa") {
           phrase = xscrambleAmp();
-       } else if (opt == "sp") {
+          timeStamping(phrase);
+      } else if (opt == "ga") {
+          phrase = genAmp(phrase);
+          timeStamping(phrase);
+      } else if (opt.substr(0,2) == "rl") {
+          if (opt.length() > strlen("rl")) {
+            try {
+              auto jump = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+              phrase = rotateLeft(phrase, jump);
+            } catch (...) {
+                std::cerr << "Invalid rotate jump." << std::endl;
+            }
+          } else 
+              phrase = rotateLeft(phrase);
+          timeStamping(phrase);
+      } else if (opt.substr(0,2) == "rr") {
+          if (opt.length() > strlen("rr")) {
+            try {
+              auto jump = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+              phrase = rotateRight(phrase, jump);
+            } catch (...) {
+                std::cerr << "Invalid rotate jump." << std::endl;
+            }
+          } else 
+              phrase = rotateLeft(phrase);
+          timeStamping(phrase);
+      } else if (opt == "sp") {
           prefPhrases.push_front(phraseStr);
           if (prefPhrases.size() > 20) prefPhrases.pop_back();
       } else if (opt.substr(0,2) == "sp") {
@@ -765,7 +847,7 @@ int main(int argc, char **argv) {
           try {
             auto cmdLen = opt.substr(0,1) == ":" ? 1 : 2;
             parsePhrase(prefPhrases.at(std::stof(opt.substr(cmdLen,opt.size()-1))));
-
+            timeStamping(phrase);
             isSoundingThread = true;
             cv.notify_one();
           } catch (...) {
@@ -806,6 +888,7 @@ int main(int argc, char **argv) {
               throw std::runtime_error("");
 
             phrase = replicate(phrase,times);
+            timeStamping(phrase);
           } catch (...) {
             std::cerr << "Invalid phrase replication." << std::endl;
           }
@@ -879,8 +962,10 @@ int main(int argc, char **argv) {
           }
       } else {
         // it's a phrase, if it's not a command
-        if (auto err = !parsePhrase(opt))
+        if (!parsePhrase(opt))
           std::cout << "Unknown symbol.\n";
+        else  
+          timeStamping(phrase);  
 
         isSoundingThread = true;
         cv.notify_one();
@@ -889,5 +974,4 @@ int main(int argc, char **argv) {
   }
 
   return 0;
-}
-  
+} 
