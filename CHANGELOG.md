@@ -1,4 +1,4 @@
-**Most recent upgrades**
+<!--**Most recent upgrades**-->
 ## 0.6
 
 . `ga`command generates random amplitudes for each and every note in the playing phrase
