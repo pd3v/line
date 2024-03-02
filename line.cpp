@@ -41,7 +41,7 @@ const float DEFAULT_BPM = 60.0;
 const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 4; // 1 bar
 const char *PROMPT = "line>";
-const std::string VERSION = "0.6";
+const std::string VERSION = "0.6.1";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint64_t CTRL_RATE = 100000; // microseconds
@@ -50,7 +50,7 @@ const long ITER_DUR = 4000; // microseconds
 std::string filenameDefault = "line";
 
 double bpm = DEFAULT_BPM;
-double quantum;
+double quantum = REF_QUANTUM;
 float amplitude = 127.;
 uint8_t ch=0, ccCh=0;
 bool muted = false;
@@ -58,6 +58,7 @@ std::pair<float,float> range{0,127};
 phraseT phrase{};
 std::string phraseStr;
 std::deque<std::string> prefPhrases{};
+double toNextBar = 0;
 
 struct State {
   std::atomic<bool> running;
@@ -248,16 +249,13 @@ public:
 } parser;
 
 struct MidiEvent {
-  std::vector<noteAmpT> notes;
-  float startTime;
-  float endTime;
-  float currentTime;
-	bool isPlaying = false;
-  float timeOffset = 0.02;
-  
-  void notesPlayStop(const float& _currentTime, std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
-    currentTime = _currentTime;
+  const std::vector<noteAmpT> notes;
+  const float startTime;
+  const float endTime;
+  bool isPlaying = false;
+  const float timeOffset = 0.02;
 
+  void notesPlayStop(const float& _currentTime, std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
     if (_currentTime >= (startTime == 0 ? 0 : (startTime - timeOffset)) && _currentTime <= (startTime + timeOffset) && !isPlaying) {
       for (auto& note : notes) {
         _message[0] = 0x90 + ch;
@@ -278,8 +276,6 @@ struct MidiEvent {
   }
 
   void ccPlayStop(const float& _currentTime, std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
-    currentTime = _currentTime;
-
     if (_currentTime >= (startTime == 0 ? 0 : (startTime - timeOffset)) && _currentTime <= (startTime + timeOffset))
       for (auto& cc : notes) {
         _message[0] = 0xB0 + ch;
@@ -299,7 +295,7 @@ struct MidiEvent {
   }
 };
 
-std::vector<MidiEvent> midiEvents;
+std::vector<MidiEvent>* midiEvents = new std::vector<MidiEvent>();
 
 void displayCommandsList(std::string listVers="") {
   using namespace std;
@@ -322,8 +318,8 @@ void displayCommandsList(std::string listVers="") {
     cout << "..n         notes mode" << endl;
     cout << "..m         mute      " << endl;
     cout << "..um        unmute    " << endl;
-    cout << "..i         sync cc   " << endl;
-    cout << "..o         async cc  " << endl;
+    // cout << "..i         sync cc   " << endl;
+    // cout << "..o         async cc  " << endl;
     cout << "..lb<[a|n]> label     " << endl;
     cout << "..sa        s amp     " << endl;
     cout << "..xa        x amp     " << endl;
@@ -608,6 +604,10 @@ bool parsePhrase(std::string& _phrase) {
   return true;
 }
 
+inline float barEndTimeRef() {
+  return ceil(quantum) - (pow(bpm,0.2) * 0.005);
+}
+
 void danglingMidiEvents(std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
   for (int i = 0; i < 128; ++i) {
     _message[0] = 0x80 + ch;
@@ -618,12 +618,10 @@ void danglingMidiEvents(std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
 }
 
 void timeStamping(phraseT _phrase) {  
-  std::vector<MidiEvent> _midiEvents;
+  std::vector<MidiEvent>* _midiEvents = new std::vector<MidiEvent>();
   std::vector<noteAmpT>_notes;
   float incr = 0;
   float _phase = 0;
-  float barD = barToMs(bpm, REF_BAR_DUR) / 1'000'000;
-  float subBarD = barD / _phrase.size() * 1.0;
   
   for (auto& subPhrase : _phrase) {
     for (auto& subsubPhrase : subPhrase) {      
@@ -631,8 +629,8 @@ void timeStamping(phraseT _phrase) {
       
       for (auto& notes : subsubPhrase)
         _notes.emplace_back(notes);
-      
-      _midiEvents.emplace_back((MidiEvent){_notes, _phase, static_cast<float>(_phase + incr - 0.001)});
+  
+      _midiEvents->emplace_back((MidiEvent){_notes, _phase, static_cast<float>(_phase + incr - 0.001)});
       _notes.clear();
       _phase += incr;
     }
@@ -673,14 +671,15 @@ int main(int argc, char **argv) {
   
   auto sequencer = async(std::launch::async, [&](){
     phraseT _phrase{};
-    double toNextBar = 0;
-    std::vector<MidiEvent> _midiEvents;
+    std::vector<MidiEvent>* _midiEvents = new std::vector<MidiEvent>();
 
     const bool linkEnabled = state.link.isEnabled();
     const std::size_t numPeers = state.link.numPeers();
     quantum = state.audioPlatform.mEngine.quantum();
     const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
     // const double late = state.audioPlatform.mEngine.outputLatency; // just a reminder of latency info available in engine
+
+    toNextBar = barEndTimeRef();
 
     // waiting for live coder's first phrase
     std::unique_lock<std::mutex> lckWait(mtxWait);
@@ -695,24 +694,26 @@ int main(int argc, char **argv) {
       // const auto beats = sessionState.beatAtTime(time, quantum);
 
       auto phase = sessionState.phaseAtTime(time, quantum);
-      toNextBar = ceil(quantum) - (pow(bpm,0.2) * 0.005);
 
       if(!phrase.empty()) {
-        if (phase >= toNextBar) {
-          _midiEvents = midiEvents;
+        if (phase >= toNextBar && midiEvents) {
+          _midiEvents = std::move(midiEvents);
           danglingMidiEvents(noteMessage, midiOut);
         }
 
         if (rNotes)
-          for_each(_midiEvents.begin(), _midiEvents.end(), [&](MidiEvent& _midiEvent){_midiEvent.notesPlayStop(phase, noteMessage, midiOut);});
+          for_each(_midiEvents->begin(), _midiEvents->end(), [&](MidiEvent& _midiEvent){_midiEvent.notesPlayStop(phase, noteMessage, midiOut);});
         else
-          for_each(_midiEvents.begin(), _midiEvents.end(), [&](MidiEvent& _midiEvent){_midiEvent.ccPlayStop(phase, noteMessage, midiOut);});
+          for_each(_midiEvents->begin(), _midiEvents->end(), [&](MidiEvent& _midiEvent){_midiEvent.ccPlayStop(phase, noteMessage, midiOut);});
 
         std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(4000)));
       } else break;
     }
-    for_each(midiEvents.begin(), midiEvents.end(), [&](MidiEvent& _midiEvent){_midiEvent.stop(noteMessage, midiOut);});
-    
+    for_each(_midiEvents->begin(), _midiEvents->end(), [&](MidiEvent& _midiEvent){_midiEvent.stop(noteMessage, midiOut);});
+
+    delete _midiEvents;
+    _midiEvents = nullptr;
+
     return "line is off.\n";
   });
 
@@ -759,6 +760,7 @@ int main(int argc, char **argv) {
               engine.setTempo(bpm);
               quantum = REF_QUANTUM;
               barDur = barToMs(bpm, REF_BAR_DUR);
+              toNextBar = barEndTimeRef();
             } catch (...) {
               std::cerr << "Invalid bpm." << std::endl;
             }
@@ -769,7 +771,7 @@ int main(int argc, char **argv) {
             try {
               quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1))) * REF_QUANTUM;
               barDur = barToMs(bpm, quantum / REF_QUANTUM * REF_BAR_DUR);
-        
+              toNextBar = barEndTimeRef();
               timeStamping(phrase);
             } catch (...) { 
                 std::cerr << "Invalid phrase duration." << std::endl;
