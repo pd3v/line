@@ -1,3 +1,51 @@
+<!--**Most recent upgrades**-->
+## 0.6
+
+. `ga`command generates random amplitudes for each and every note in the playing phrase
+
+, `rl`, `rr` commands rotate, one/various positions, left or right, respectively, each note(s)/cc
+
+. Upgrade notes/cc sync process
+
+## 0.5.37
+
+. New meaning to `/` command. Eg. `/8`, phrase duration will be 8 times longer.
+
+. Improve sync
+
+. Fix some parser pattern matching
+
+____
+
+## 0.5.29
+
+. `/` command typed alone echos current set quantum value
+
+. `ch`, `cc`, `bpm`, `mi` and `ma` commands when typd alone, no value typed after, will echos current set value
+
+. Automated loading of a line gig - automated lauching of as much line instances as .line files exist in a directory
+
+. Polyrhythms
+
+. Load *.line file on line's launch, as a parameter
+
+____
+
+## 0.5.20
+
+. Save/load line's instance parameters into/from '.line' file; on loading a '.line' file to a line instance, all parameters will also be applied, say, prompt, notes/cc, ch, values range
+
+. `*` command for length multiplier of playing phrase; e.g. `*2` command on playing phrase "c3 cs3" will become "c3 cs3 c3 cs3". 1/2 to 1/4 note duration
+
+. Save and load a text file with the preferred phrases' list
+
+. Save to preferred phrases queue; load back selected to playing; list saved phrases
+
+. Chords in '.' bar subdivisions; e.g.: c5 .(c4 e4 g4) (c4 d4 g4). Plays *1/2 C 1/4 CMaj 1/4 Csus2*
+
+. Set global amp by %
+
+____
 
 ## 0.4.3
 

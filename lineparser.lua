@@ -1,8 +1,11 @@
+package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;' .. package.cpath
+
 local lpeg = require 'lpeg'
 local write = io.write
 lpeg.locale(lpeg)
 
 local AMP_SYMBOL = "~"
+local NO_MATCH = {{'e', {{255,0}}}}
 local ampGlobal = 127
 local range_min,range_max = 0,127
 
@@ -16,7 +19,7 @@ end
 function addToNoteTable(...)
   result = {}
   local arg = {...}
-  
+
   for i,v in ipairs(arg) do
     result[#result+1] = v
   end
@@ -27,7 +30,7 @@ end
 function addToSubTable(...)
   result = {}
   local arg = {...}
-  
+
   for i,v in ipairs(arg) do
     result[#result+1] = v
   end
@@ -55,17 +58,17 @@ function toNoteAmp(v)
   else
     result =  {tonumber(v),127}
   end
-  
+
   return result
 end
 
--- :FIX runs for every note in chord. should run one per chord.
+-- :FIX runs for every note in chord. should run once per chord.
 function toChordAmp(v)
   if string.find(v,AMP_SYMBOL) then
     chord,amp = splitNoteAmp(v,AMP_SYMBOL)
     amp = amp*127
   else
-    amp = 127  
+    amp = 127
   end
   ampGlobal = amp
 end
@@ -83,24 +86,28 @@ function getValueForKey(t,key)
 end
 
 function noteCipherToMidi(cipher)
-  local note,amp
-  ciphers = { c = 0,cb = 11,cs = 1,d = 2,db = 1,ds = 3,
-              e = 4,eb = 3,f = 5,fb = 4,fs = 6,gb = 6,
-              g = 7, gs = 8, ab = 8, a = 9, as = 10,
-              bb = 10,b = 11
+  local note, amp, octave
+  ciphers = { c = 0,cf = 11,cs = 1,d = 2,df = 1,ds = 3,
+              e = 4,ef = 3,f = 5,ff = 4,fs = 6,gf = 6,
+              g = 7,gs = 8,af = 8,a = 9,as = 10,bf = 10,b = 11
             }
-  
   if string.find(cipher,AMP_SYMBOL) then
     note,amp = splitNoteAmp(cipher,AMP_SYMBOL)
+    octave = note:match("%d+") ~= nil and note:match("%d+") or 0
+    note = note:match("%a+")
   else
-    note = cipher
+    note = cipher:match("%a+")
+    octave = cipher:match("%d+") ~= nil and cipher:match("%d+") or 0
     amp = 1
   end
 
-  octave = string.sub(note,(#note > 1) and -1 or 1):match("^%-?%d+$")
-  cipher_to_midi = getValueForKey(ciphers,string.sub(note,1,(octave ~= nil) and -2 or 1))+(12*((octave ~= nil) and octave or 0))
-  
-  return toNoteAmp(tostring(cipher_to_midi)..AMP_SYMBOL..tostring(amp))
+  if getValueForKey(ciphers,note) then
+    cipher_to_midi = getValueForKey(ciphers, note) + (12 * octave)
+  else
+    return {0,0} -- cipher not matching error
+  end
+
+  return {cipher_to_midi, amp * 127}
 end
 
 local note = lpeg.R("09")^1
@@ -118,8 +125,8 @@ local cipher_bs_oct = lpeg.P(cipher * bs * oct)^1 / noteCipherToMidi
 local cipher_bs_oct_amp = lpeg.P((cipher * bs * oct) * (lpeg.S(AMP_SYMBOL) * (lpeg.P("0.") + lpeg.S("."))^0 * amp)^0)^1 / noteCipherToMidi
 
 local noteP = lpeg.Cg((- one_note_exclusions * (note_amp + cipher_bs_oct_amp + rest)^1 * (sep^1 * (note_amp + cipher_bs_oct_amp + rest))^0)^1) / addToNoteTable
-local subP = lpeg.Cg(("." * ((note_amp + cipher_bs_oct_amp + rest)^1 * (sep^1 * (note_amp + cipher_bs_oct_amp + rest))^0)^1 * ".")) / addToSubTable
 local chordP = lpeg.Cg(("(" * ((note_amp + cipher_bs_oct_amp + rest)^1 * (sep^1 * (note_amp + cipher_bs_oct_amp + rest))^0)^1 * ")" * chord_amp)) / addToChordTable
+local subP = lpeg.Cg(("." * ((noteP + chordP + rest)^1 * (sep^1 * (noteP + chordP + rest))^0)^1 * ".")) / addToSubTable
 
 local V = lpeg.V
 local phraseG = lpeg.P {"phrase",
@@ -128,7 +135,6 @@ local phraseG = lpeg.P {"phrase",
   sub = subP;
   note = noteP;
 } * -1
-
 
 -- Phrases of different ranges other then MIDI 0-127
 function rescaleToMIDI(v)
