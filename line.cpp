@@ -696,10 +696,8 @@ int main(int argc, char **argv) {
       auto phase = sessionState.phaseAtTime(time, quantum);
 
       if(!phrase.empty()) {
-        if (phase >= toNextBar && midiEvents) {
+        if (phase >= toNextBar && midiEvents)
           _midiEvents = std::move(midiEvents);
-          danglingMidiEvents(noteMessage, midiOut);
-        }
 
         if (rNotes)
           for_each(_midiEvents->begin(), _midiEvents->end(), [&](MidiEvent& _midiEvent){_midiEvent.notesPlayStop(phase, noteMessage, midiOut);});
