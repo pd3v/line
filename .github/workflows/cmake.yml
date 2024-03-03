@@ -14,7 +14,7 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive --remote
     - name: Build
@@ -26,15 +26,15 @@ jobs:
         rm ${{github.workspace}}/build/CMakeCache.txt
         rm ${{github.workspace}}/build/Makefile
     - name: line macOS Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: line_v0.5.36_macOS
+        name: line_v0.6.1_macOS
         path: ${{github.workspace}}/
   linux_build:
       runs-on: ubuntu-latest
       steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Checkout submodules
         run: git submodule update --init --recursive --remote
       - name: Build
@@ -46,7 +46,7 @@ jobs:
           rm ${{github.workspace}}/build/CMakeCache.txt
           rm ${{github.workspace}}/build/Makefile
       - name: line linux Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: line_v0.5.36_linux
+          name: line_v0.6.1_linux
           path: ${{github.workspace}}/
