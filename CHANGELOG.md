@@ -1,11 +1,13 @@
 <!--**Most recent upgrades**-->
-## 0.6
+## 0.6.1
 
 . `ga`command generates random amplitudes for each and every note in the playing phrase
 
 , `rl`, `rr` commands rotate, one/various positions, left or right, respectively, each note(s)/cc
 
 . Upgrade notes/cc sync process
+
+____
 
 ## 0.5.37
 
