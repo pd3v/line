@@ -12,13 +12,13 @@
 #include <future>
 #include <mutex>
 #include <vector>
-#include <deque>
 #include <stdexcept>
 #include <stdlib.h>
 #include <algorithm>
 #include <random>
 #include <tuple>
 #include <atomic>
+#include <regex>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
@@ -41,7 +41,7 @@ const float DEFAULT_BPM = 60.0;
 const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 4; // 1 bar
 const char *PROMPT = "line>";
-const std::string VERSION = "0.6.1";
+const std::string VERSION = "0.7";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint64_t CTRL_RATE = 100000; // microseconds
@@ -59,6 +59,7 @@ phraseT phrase{};
 std::string phraseStr;
 std::deque<std::string> prefPhrases{};
 double toNextBar = 0;
+bool commandHasPhrase = false; // command(s) is added to history only if it has a phrase in it. Arggg!
 
 struct State {
   std::atomic<bool> running;
@@ -586,19 +587,31 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
   return lineParams;
 }
 
+std::deque<std::string> splitCommands(const std::string& composedCmd) {
+  std::stringstream ssCmd(composedCmd);
+  std::string eachCmd;
+  std::deque<std::string> sequencedCmds;
+
+  while(std::getline(ssCmd, eachCmd, '<'))
+   sequencedCmds.emplace_back(std::regex_replace(std::regex_replace(eachCmd, std::regex("^ +"), ""), std::regex(" +$"), ""));
+
+  return sequencedCmds;
+}
+
 bool parsePhrase(std::string& _phrase) {
   phraseT tempPhrase{};
   phraseStr = _phrase;
+
+  // splitCommands(_phrase);
 
   if (range.first != 0 || range.second != 127)
     tempPhrase = parser.parsing(parser.rescaling(_phrase,range));
   else
     tempPhrase = parser.parsing(_phrase);
 
-  if (!tempPhrase.empty()) {
+  if (!tempPhrase.empty())
     phrase = std::move(tempPhrase);
-    add_history(_phrase.c_str());
-  } else
+  else
     return false;
 
   return true;
@@ -608,6 +621,7 @@ inline float barEndTimeRef() {
   return ceil(quantum) - (pow(bpm,0.2) * 0.005);
 }
 
+/* 
 void danglingMidiEvents(std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
   for (int i = 0; i < 128; ++i) {
     _message[0] = 0x80 + ch;
@@ -616,6 +630,7 @@ void danglingMidiEvents(std::vector<uint8_t>& _message, RtMidiOut& _midiOut) {
     _midiOut.sendMessage(&_message);
   }
 }
+*/
 
 void timeStamping(phraseT _phrase) {  
   std::vector<MidiEvent>* _midiEvents = new std::vector<MidiEvent>();
@@ -717,18 +732,17 @@ int main(int argc, char **argv) {
 
   std::cout << "line " << VERSION << " is on." << std::endl << "Type \"ls\" for commands short list; \"le\" for extended." << std::endl;
 
-  while (!exit) {
-    opt = readline(prompt.c_str());
-    
-    if (!opt.empty()) {
-      if (opt == "ls") {
+
+  std::function<void(std::string&)> parseCommands = [&](auto& _opt){
+    if (!_opt.empty()) {
+      if (_opt == "ls") {
         displayCommandsList("");
-      } else if (opt == "le") {
-        displayCommandsList(opt);
-      } else if (opt.substr(0,2) == "ch") {
-          if (opt.length() > strlen("ch"))
+      } else if (_opt == "le") {
+        displayCommandsList(_opt);
+      } else if (_opt.substr(0,2) == "ch") {
+          if (_opt.length() > strlen("ch"))
             try {
-              ch = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+              ch = std::abs(std::stoi(_opt.substr(2,_opt.size()-1)));
               timeStamping(phrase);
             }
             catch (...) {
@@ -736,14 +750,14 @@ int main(int argc, char **argv) {
             }
           else
             std::cout << (int)ch << '\n';
-      } else if (opt == "n") {
+      } else if (_opt == "n") {
           rNotes = true;
           phrase.clear();
           phrase.push_back({{{REST_VAL,0}}});
-      } else if (opt.substr(0,2) == "cc") {
-          if (opt.length() > strlen("cc"))
+      } else if (_opt.substr(0,2) == "cc") {
+          if (_opt.length() > strlen("cc"))
             try {
-              ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+              ccCh = std::abs(std::stoi(_opt.substr(2,_opt.size()-1)));
               rNotes = false;
             }
             catch (...) {
@@ -751,10 +765,10 @@ int main(int argc, char **argv) {
             }
           else
             std::cout << (int)ccCh << '\n';
-      } else if (opt.substr(0,3) == "bpm") {
-          if (opt.length() > strlen("bpm"))
+      } else if (_opt.substr(0,3) == "bpm") {
+          if (_opt.length() > strlen("bpm"))
             try {
-              bpm = static_cast<double>(std::abs(std::stoi(opt.substr(3,opt.size()-1))));
+              bpm = static_cast<double>(std::abs(std::stoi(_opt.substr(3,_opt.size()-1))));
               engine.setTempo(bpm);
               quantum = REF_QUANTUM;
               barDur = barToMs(bpm, REF_BAR_DUR);
@@ -764,10 +778,10 @@ int main(int argc, char **argv) {
             }
           else
             std::cout << bpm << '\n';
-      } else if (opt.substr(0,1) == "/") {
-          if (opt.length() > strlen("/"))
+      } else if (_opt.substr(0,1) == "/") {
+          if (_opt.length() > strlen("/"))
             try {
-              quantum = static_cast<double>(std::stof(opt.substr(1,opt.size()-1))) * REF_QUANTUM;
+              quantum = static_cast<double>(std::stof(_opt.substr(1,_opt.size()-1))) * REF_QUANTUM;
               barDur = barToMs(bpm, quantum / REF_QUANTUM * REF_BAR_DUR);
               toNextBar = barEndTimeRef();
               timeStamping(phrase);
@@ -776,46 +790,46 @@ int main(int argc, char **argv) {
             }
           else
             std::cout << quantum / REF_QUANTUM << '\n';
-      } else if (opt == "ex") {
+      } else if (_opt == "ex") {
           phrase.clear();
           isSoundingThread = true;
           cv.notify_one();
           std::cout << sequencer.get();
           exit = true;
-      } else if (opt.substr(0,2) == "am") {
+      } else if (_opt.substr(0,2) == "am") {
           try {
-            auto newAmp = std::stof(opt.substr(2,opt.size()-1));
+            auto newAmp = std::stof(_opt.substr(2,_opt.size()-1));
             phrase = map([&](auto& _n){_n.second != 0 ? _n.second *= (newAmp*0.01) : _n.second = newAmp * 1.27;});
             timeStamping(phrase);
           } catch (...) {
             std::cerr << "Invalid amplitude." << std::endl;
           }
-      } else if (opt == "m") {
+      } else if (_opt == "m") {
           mute();
-      } else if (opt == "um") {
+      } else if (_opt == "um") {
           unmute();
-      } else if (opt == "r") {
+      } else if (_opt == "r") {
           phrase = reverse(phrase);
           timeStamping(phrase);
-      } else if (opt == "s") {
+      } else if (_opt == "s") {
           phrase = scramble(phrase);
           timeStamping(phrase);
-      } else if (opt == "sa") {
+      } else if (_opt == "sa") {
           phrase = scrambleAmp(phrase);
           timeStamping(phrase);
-      } else if (opt == "x") {
+      } else if (_opt == "x") {
           phrase = xscramble(phrase);
           timeStamping(phrase);
-      } else if (opt == "xa") {
+      } else if (_opt == "xa") {
           phrase = xscrambleAmp();
           timeStamping(phrase);
-      } else if (opt == "ga") {
+      } else if (_opt == "ga") {
           phrase = genAmp(phrase);
           timeStamping(phrase);
-      } else if (opt.substr(0,2) == "rl") {
-          if (opt.length() > strlen("rl")) {
+      } else if (_opt.substr(0,2) == "rl") {
+          if (_opt.length() > strlen("rl")) {
             try {
-              auto jump = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+              auto jump = std::abs(std::stoi(_opt.substr(2,_opt.size()-1)));
               phrase = rotateLeft(phrase, jump);
             } catch (...) {
                 std::cerr << "Invalid rotate jump." << std::endl;
@@ -823,10 +837,10 @@ int main(int argc, char **argv) {
           } else 
               phrase = rotateLeft(phrase);
           timeStamping(phrase);
-      } else if (opt.substr(0,2) == "rr") {
-          if (opt.length() > strlen("rr")) {
+      } else if (_opt.substr(0,2) == "rr") {
+          if (_opt.length() > strlen("rr")) {
             try {
-              auto jump = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
+              auto jump = std::abs(std::stoi(_opt.substr(2,_opt.size()-1)));
               phrase = rotateRight(phrase, jump);
             } catch (...) {
                 std::cerr << "Invalid rotate jump." << std::endl;
@@ -834,55 +848,60 @@ int main(int argc, char **argv) {
           } else 
               phrase = rotateLeft(phrase);
           timeStamping(phrase);
-      } else if (opt == "sp") {
+      } else if (_opt == "sp") {
           prefPhrases.push_front(phraseStr);
           if (prefPhrases.size() > 20) prefPhrases.pop_back();
-      } else if (opt.substr(0,2) == "sp") {
+      } else if (_opt.substr(0,2) == "sp") {
           try {
-            prefPhrases.at(std::stof(opt.substr(2,opt.size()-1))) = phraseStr;
+            prefPhrases.at(std::stof(_opt.substr(2,_opt.size()-1))) = phraseStr;
           } catch (...) {
             std::cerr << "Invalid phrase slot." << std::endl;
           }
-      } else if (opt.substr(0,2) == "lp" || opt.substr(0,1) == ":") {
+      } else if (_opt.substr(0,2) == "lp" || _opt.substr(0,1) == ":") {
           try {
-            auto cmdLen = opt.substr(0,1) == ":" ? 1 : 2;
-            parsePhrase(prefPhrases.at(std::stof(opt.substr(cmdLen,opt.size()-1))));
-            timeStamping(phrase);
+            auto cmdLen = _opt.substr(0,1) == ":" ? 1 : 2;
+            auto sequencedCommands = splitCommands(prefPhrases.at(std::stof(_opt.substr(cmdLen,_opt.size()-1))));
+
+            for(; !sequencedCommands.empty(); sequencedCommands.pop_front())
+              parseCommands(sequencedCommands.front());
+
+            add_history(prefPhrases.at(std::stof(_opt.substr(cmdLen,_opt.size()-1))).c_str());
+            
             isSoundingThread = true;
             cv.notify_one();
           } catch (...) {
             std::cerr << "Invalid phrase slot." << std::endl;
           }
-      } else if (opt == "l") {
+      } else if (_opt == "l") {
         uint8_t i = 0;
         for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _p) {
           std::cout << "[" << (int)i++ << "] " << _p << std::endl;
         });
-      } else if (opt == "i") {
+      } else if (_opt == "i") {
           sync = true;
-      } else if (opt == "o") {
+      } else if (_opt == "o") {
           sync = false;
-      } else if (opt.substr(0,2) == "mi") {
-          if (opt.length() > strlen("mi"))
+      } else if (_opt.substr(0,2) == "mi") {
+          if (_opt.length() > strlen("mi"))
             try {
-              range.first = std::stof(opt.substr(2,opt.size()-1));
+              range.first = std::stof(_opt.substr(2,_opt.size()-1));
             } catch (...) {
               std::cerr << "Invalid range min." << std::endl;
             }
           else
             std::cout << range.first << '\n';
-      } else if (opt.substr(0,2) == "ma") {
-          if (opt.length() > strlen("ma"))
+      } else if (_opt.substr(0,2) == "ma") {
+          if (_opt.length() > strlen("ma"))
             try {
-              range.second = std::stof(opt.substr(2,opt.size()-1));
+              range.second = std::stof(_opt.substr(2,_opt.size()-1));
             } catch (...) {
               std::cerr << "Invalid range max." << std::endl;
             }
           else
             std::cout << range.second << '\n';
-      } else if (opt.substr(0,1) == "*") {
+      } else if (_opt.substr(0,1) == "*") {
           try {
-            auto times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));
+            auto times = static_cast<int>(std::stof(_opt.substr(1,_opt.size()-1)));
 
             if (times == 0)
               throw std::runtime_error("");
@@ -892,25 +911,25 @@ int main(int argc, char **argv) {
           } catch (...) {
             std::cerr << "Invalid phrase replication." << std::endl;
           }
-      } else if (opt.substr(0,2) == "lb") {
-          // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
+      } else if (_opt.substr(0,2) == "lb") {
+          // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+_opt.substr(2,_opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
           prompt = PROMPT;
 
-          if (opt.length() > 2) {
+          if (_opt.length() > 2) {
             std::string _prompt =  PROMPT;
-            prompt = opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
-            filenameDefault = opt.substr(2,opt.length()-1);
+            prompt = _opt.substr(2,_opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length());
+            filenameDefault = _opt.substr(2,_opt.length()-1);
           }
-      } else if (opt.substr(0,2) == "sf") {
+      } else if (_opt.substr(0,2) == "sf") {
           try {
-            auto filename = opt.substr(2,opt.size()-1);
+            auto filename = _opt.substr(2,_opt.size()-1);
 
             if (filename.empty()) filename = (prompt != PROMPT ? prompt.substr(0,prompt.length()-1) : filenameDefault);
             std::ofstream outfile (filename + ".line");
 
             // line instance params
             outfile << std::to_string(rNotes) << '\n' << (rNotes ? std::to_string((int)ch) : std::to_string((int)ccCh)) << '\n'
-             << filename << '\n' << std::to_string(range.first) << '\n' << std::to_string(range.second) << "\n\n";
+            << filename << '\n' << std::to_string(range.first) << '\n' << std::to_string(range.second) << "\n\n";
 
             for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _phraseStr){outfile << _phraseStr << "\n";});
 
@@ -918,9 +937,9 @@ int main(int argc, char **argv) {
           } catch (...) {
             std::cerr << "Invalid filename." << std::endl;
           }
-      } else if (opt.substr(0,2) == "lf") {
+      } else if (_opt.substr(0,2) == "lf") {
           try {
-            auto filename = opt.substr(2,opt.size()-1);
+            auto filename = _opt.substr(2,_opt.size()-1);
             std::cout << filename << '\n';
             if (filename.empty()) filename = filenameDefault;
             std::ifstream file(filename + ".line");
@@ -954,23 +973,38 @@ int main(int argc, char **argv) {
           } catch (...) {
             std::cerr << "Couldn't load file." << std::endl;
           }
-      } else if (opt.substr(0,2) == "lt") {
+      } else if (_opt.substr(0,2) == "lt") {
           try {
-            latency = std::stof(opt.substr(2,opt.size()-1));
+            latency = std::stof(_opt.substr(2,_opt.size()-1));
           } catch (...) {
             std::cerr << "Invalid latency." << std::endl;
           }
       } else {
         // it's a phrase, if it's not a command
-        if (!parsePhrase(opt))
+        if (!parsePhrase(_opt))
           std::cout << "Unknown symbol.\n";
-        else  
+        else
           timeStamping(phrase);  
+        
+        commandHasPhrase = commandHasPhrase || true;
 
         isSoundingThread = true;
         cv.notify_one();
       }
     }
+  };
+
+  while (!exit) {
+    opt = readline(prompt.c_str());
+    auto sequencedCommands = splitCommands(opt);
+
+    for(; !sequencedCommands.empty(); sequencedCommands.pop_front())
+      parseCommands(sequencedCommands.front());
+
+    if (commandHasPhrase) 
+      add_history(opt.c_str());
+
+    commandHasPhrase = false;
   }
 
   return 0;
