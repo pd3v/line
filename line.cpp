@@ -12,7 +12,6 @@
 #include <future>
 #include <mutex>
 #include <vector>
-#include <queue>
 #include <stdexcept>
 #include <stdlib.h>
 #include <algorithm>
