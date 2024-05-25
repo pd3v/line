@@ -2,6 +2,9 @@
 
 . `<` to combine multiple commands in one line command
 
+____
+
+
 ## 0.6.1
 
 . `ga`command generates random amplitudes for each and every note in the playing phrase
