@@ -1,4 +1,7 @@
-<!--**Most recent upgrades**-->
+## 0.6.2
+
+. `<` to combine multiple commands in one line command
+
 ## 0.6.1
 
 . `ga`command generates random amplitudes for each and every note in the playing phrase
