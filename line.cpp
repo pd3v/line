@@ -22,7 +22,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
-#include "externals/rtmidi/RtMidi.h"
+// #include "externals/rtmidi/RtMidi.h"
+#include "RtMidi.h"
 
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
@@ -41,7 +42,7 @@ const float DEFAULT_BPM = 60.0;
 const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 4; // 1 bar
 const char *PROMPT = "line>";
-const std::string VERSION = "0.7";
+const std::string VERSION = "0.6.2";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint64_t CTRL_RATE = 100000; // microseconds
