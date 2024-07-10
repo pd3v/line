@@ -26,9 +26,10 @@
 #include "RtMidi.h"
 
 #if (__APPLE__)
-#define MACOSX_CORE
-#else if(__linux__)
-#define LINUX_ALSA
+#define MACOSX_CORE 1
+#endif
+#if (__linux__)
+#define LINUX_ALSA 1
 #endif
 
 #if defined(LINK_PLATFORM_UNIX)
