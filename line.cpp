@@ -25,6 +25,12 @@
 // #include "externals/rtmidi/RtMidi.h"
 #include "RtMidi.h"
 
+#if (__APPLE__)
+#define MACOSX_CORE
+#else if(__linux__)
+#define LINUX_ALSA
+#endif
+
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
 #endif
