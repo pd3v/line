@@ -1,5 +1,5 @@
 package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;/usr/local/lib/lib?.dylib;/usr/local/lib/lib?.so' .. package.cpath
-package.cpath = 'lib/liblpeg.dylib;/lib/liblpeg.so;' .. package.cpath -- hb install placement
+package.cpath = '../liblpeg.dylib;/../liblpeg.so;' .. package.cpath -- hb install placement
 
 local lpeg = require 'lpeg'
 local write = io.write
