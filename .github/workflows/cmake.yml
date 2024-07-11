@@ -38,7 +38,7 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive --remote
       - name: Build
-        run: ./build.sh
+        run: ./build_linux.sh
       - name: Remove build-only process files
         run: |
           rm -r ${{github.workspace}}/build/CMakeFiles
