@@ -18,6 +18,7 @@ endif()
 if(LINUX AND NOT GIT_ACTION)
   set(CMAKE_C_COMPILER /usr/bin/gcc)
   set(CMAKE_CXX_COMPILER /usr/bin/g++)
+  set(RTMIDI_API_ALSA TRUE)
 endif()
 
 project(line VERSION 0.6.2)
