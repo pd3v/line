@@ -74,4 +74,7 @@ target_link_libraries(
   Ableton::Link
 )
 
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/lineparser.lua
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 install(TARGETS ${PROJECT_NAME})
