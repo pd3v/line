@@ -75,6 +75,6 @@ target_link_libraries(
 )
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/lineparser.lua
-     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/build/)
 
 install(TARGETS ${PROJECT_NAME})
