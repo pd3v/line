@@ -133,7 +133,7 @@ class Parser {
 public:
   Parser()  {
     luaL_openlibs(L);
-    const std::string parserFile = "lineparser.lua";
+    const std::string parserFile = "../lineparser.lua";
     std::ostringstream textBuffer;
     std::ifstream input (parserFile.c_str());
     textBuffer << input.rdbuf();
