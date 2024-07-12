@@ -22,8 +22,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
-// #include "externals/rtmidi/RtMidi.h"
-#include "RtMidi.h"
+#include "externals/rtmidi/RtMidi.h"
+//#include "RtMidi.h"
 
 #if (__APPLE__)
   #define __MACOSX_CORE__
