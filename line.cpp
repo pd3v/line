@@ -138,6 +138,8 @@ public:
     std::ifstream input (parserFile.c_str());
     textBuffer << input.rdbuf();
     parserCode = textBuffer.str();
+
+    std::cout << "parserCode->" << parserCode << std::endl;
   }
   ~Parser() {lua_close(L);};
 
@@ -152,7 +154,7 @@ public:
      "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
 
     if (int luaError = luaL_dostring(L, parseRange.c_str()) == LUA_OK) {
-      lua_getglobal(L,"rs");
+      lua_getglobal(L,"rs");  
 
       if (lua_isstring(L,-1))
         _phrase = lua_tostring(L,-1);
