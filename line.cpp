@@ -22,8 +22,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
-#include "externals/rtmidi/RtMidi.h"
-//#include "RtMidi.h"
+// #include "externals/rtmidi/RtMidi.h"
+#include "RtMidi.h"
 
 #if (__APPLE__)
   #define __MACOSX_CORE__
@@ -133,7 +133,7 @@ class Parser {
 public:
   Parser()  {
     luaL_openlibs(L);
-    const std::string parserFile = "externals/parser/lineparser.lua";
+    const std::string parserFile = "../lineparser.lua";
     std::ostringstream textBuffer;
     std::ifstream input (parserFile.c_str());
     textBuffer << input.rdbuf();

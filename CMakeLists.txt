@@ -74,8 +74,8 @@ target_link_libraries(
   Ableton::Link
 )
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/parser/)
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/lineparser.lua
+# file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/parser/)
+# file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/lineparser.lua
      DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/parser)
 
 install(TARGETS ${PROJECT_NAME})
