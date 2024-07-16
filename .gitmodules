@@ -1,3 +1,8 @@
 [submodule "externals/rtmidi"]
 	path = externals/rtmidi
 	url = https://github.com/thestk/rtmidi.git
+	ignore = untracked
+
+[submodule "externals/link"]
+	path = externals/link
+	url = https://github.com/Ableton/link.git

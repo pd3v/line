@@ -1,16 +1,45 @@
-**Most recent upgrades**
+## 0.6.2
 
-. `\` command to set phrase lenght/dur
+. `<` to combine multiple commands in one line command
 
-. load and save '.line' file echos file's name.extension
+____
 
-. `*` command alone echos current's phrase multiplier
 
-. `ch`, `cc`, `bpm`, `mi` and `ma` commands when typd alone, no value typed after, will echo current set value
+## 0.6.1
+
+. `ga`command generates random amplitudes for each and every note in the playing phrase
+
+, `rl`, `rr` commands rotate, one/various positions, left or right, respectively, each note(s)/cc
+
+. Upgrade notes/cc sync process
+
+____
+
+## 0.5.37
+
+. New meaning to `/` command. Eg. `/8`, phrase duration will be 8 times longer.
+
+. Improve sync
+
+. Fix some parser pattern matching
+
+____
+
+## 0.5.29
+
+. `/` command typed alone echos current set quantum value
+
+. `ch`, `cc`, `bpm`, `mi` and `ma` commands when typd alone, no value typed after, will echos current set value
+
+. Automated loading of a line gig - automated lauching of as much line instances as .line files exist in a directory
+
+. Polyrhythms
 
 . Load *.line file on line's launch, as a parameter
 
-## 0.4.19
+____
+
+## 0.5.20
 
 . Save/load line's instance parameters into/from '.line' file; on loading a '.line' file to a line instance, all parameters will also be applied, say, prompt, notes/cc, ch, values range
 

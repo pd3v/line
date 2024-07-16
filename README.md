@@ -1,9 +1,11 @@
-# line   <span>    [![line build macOS](https://github.com/pd3v/line/actions/workflows/cmake.yml/badge.svg)](https://github.com/pd3v/line/actions/workflows/cmake.yml)</span>
-<span style ="font-size:12pt;font-weight:bold">A tiny command-line midi sequencer for live coding.</span> (For **ableton link** compatible version go [here](https://github.com/pd3v/line/tree/ableton_link_integration))
+# line [![line build macOS](https://github.com/pd3v/line/actions/workflows/cmake.yml/badge.svg)](https://github.com/pd3v/line/actions/workflows/cmake.yml)</span>
+<span style ="font-size:12pt;font-weight:bold">A tiny command-line midi sequencer for live coding.</span> <span style ="font-size:10pt">(**ableton link** compatible version)</span> <span style ="font-size:11pt">
 
 + Sends MIDI messages to a chosen MIDI channel. Default is 1.
 
 + 1 instrument or 1 CC
+
+To some videos live coding with it [go here.](https://twitter.com/search?q=%23linelivecoding&src=hashtag_click&f=live)<span style ="font-size:8pt">(twitter)</span>
 
 <img src="https://github.com/pd3v/line/blob/develop/line 0.4.3 (7 running).png" alt="7 instances of **line** running simultaneously. 1 synth. 6 cc." style="width:60%;height:60%"/>
 
@@ -14,57 +16,57 @@
 
 #### There's a Mac/M1/M2 build ready
 
-+ Just [download](https://github.com/pd3v/line/suites/14757556676/artifacts/839008087) and unzip the file
++ Go to [Actions page](https://github.com/pd3v/line/actions) > latest workflow run > section *Artifacts*, download and unzip the file
 + Go to the **build** folder, type `./line` and press Enter
 
 #### There's a Mac/Intel build ready
 
-+ Just unzip **line_0.4.24_Mac_Intel_build.zip** file
++ Just unzip **line_0.5.25_ablt_lnk_Mac_Intel_build.zip** file
 + Go to the **build** folder, type `./line` and press Enter
-
 
 ### What you need to build *line*
 
 + **readline** library (should be already on your system, if not, you have to install it)
++ **jack** library (**only** for Linux. It is not installed by default. If the computer has no audio/music production sofware succefully used then a *jack* installation is needed)
 + **CMake**
 
 <!-- ### Get *line* binaries -->
 
 <!-- [macos binaries](https://github.com/pd3v/line/actions/runs/1802392423) -->
 
-### To clone this repo with *rtmidi* submodule included
+### To clone this repo with *rtmidi* and *link* submodules included
 
 `git clone --recursive https://github.com/pd3v/line.git`
 
 <!--### To build and run *line* 
-
-#### Install lua language and lpeg (used for parsing) first
-
-##### MacOS, Linux or Windows 
-
-After installing *[luarocks](https://luarocks.org/#quick-start)* package manager
-
-In command-line, type and Enter:
-
-`luarocks install lpeg` 
-
-<!-- ###### On MacOS with *macports*
+ 
+ #### Install lua language and lpeg (used for parsing) first
+ 
+ ##### MacOS, Linux or Windows 
+ 
+ After installing *[luarocks](https://luarocks.org/#quick-start)* package manager
+ 
+ In command-line, type and Enter:
+ 
+ `luarocks install lpeg` 
+ 
+ <!-- ###### On MacOS with *macports*
  
  `port search --name --glob 'lua' ` 
-
-`sudo port install lua @5.3.5` // 5.3.5 or other version
-
-###### On Ubuntu/Debian*
-
-`sudo apt install lua5.3` // 5.3 or other version
-
-###### On Windows* with *Chocolatey*
-
-`choco install lua`
-
-(an alternative for installation would be *Luarocks* package manager)
-
-\* Didn't tried it out -->
+ 
+ `sudo port install lua @5.3.5` // 5.3.5 or other version
+ 
+ ###### On Ubuntu/Debian*
+ 
+ `sudo apt install lua5.3` // 5.3 or other version
+ 
+ ###### On Windows* with *Chocolatey*
+ 
+ `choco install lua`
+ 
+ (an alternative for installation would be *Luarocks* package manager)
+ 
+ \* Didn't tried it out -->
 
 #### Build and run *line*
 
@@ -80,8 +82,7 @@ In command-line, type (1. as Admin) and Enter:
 
 3. `./line`
 
-<!--(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)
--->
+<!--(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)-->
 **Now run your favorite synth, sampler, DAW, or other MIDI receiver!**
 
 ## Manual
@@ -150,6 +151,12 @@ maximum is 1000
 concat phrase 4x 
 
 `*4`
+
+**Set phrase duration n times:**
+
+Increase phrase duration 8x 
+
+`/8`
 
 **Mute and unmute:**
 
@@ -251,4 +258,3 @@ subtract 10 ms
 
 `lt10`
 
- 

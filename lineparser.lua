@@ -1,10 +1,15 @@
+<<<<<<< HEAD
 package.cpath = 'externals/?/lib?.dylib;expernals/?/?.so;' .. package.cpath
+=======
+package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;../lib/liblpeg.dylib;../lib/liblpeg.so;/usr/local/lib/lib?.dylib;/usr/local/lib/lib?.so' .. package.cpath
+>>>>>>> ableton_link_integration
 
 local lpeg = require 'lpeg'
 local write = io.write
 lpeg.locale(lpeg)
 
 local AMP_SYMBOL = "~"
+local NO_MATCH = {{'e', {{255,0}}}}
 local ampGlobal = 127
 local range_min,range_max = 0,127
 
@@ -18,7 +23,7 @@ end
 function addToNoteTable(...)
   result = {}
   local arg = {...}
-  
+
   for i,v in ipairs(arg) do
     result[#result+1] = v
   end
@@ -29,7 +34,7 @@ end
 function addToSubTable(...)
   result = {}
   local arg = {...}
-  
+
   for i,v in ipairs(arg) do
     result[#result+1] = v
   end
@@ -57,7 +62,7 @@ function toNoteAmp(v)
   else
     result =  {tonumber(v),127}
   end
-  
+
   return result
 end
 
@@ -67,7 +72,7 @@ function toChordAmp(v)
     chord,amp = splitNoteAmp(v,AMP_SYMBOL)
     amp = amp*127
   else
-    amp = 127  
+    amp = 127
   end
   ampGlobal = amp
 end
@@ -85,28 +90,32 @@ function getValueForKey(t,key)
 end
 
 function noteCipherToMidi(cipher)
+<<<<<<< HEAD
   local note,amp
+=======
+  local note, amp, octave
+>>>>>>> ableton_link_integration
   ciphers = { c = 0,cf = 11,cs = 1,d = 2,df = 1,ds = 3,
               e = 4,ef = 3,f = 5,ff = 4,fs = 6,gf = 6,
               g = 7,gs = 8,af = 8,a = 9,as = 10,bf = 10,b = 11
             }
-  
   if string.find(cipher,AMP_SYMBOL) then
     note,amp = splitNoteAmp(cipher,AMP_SYMBOL)
+    octave = note:match("%d+") ~= nil and note:match("%d+") or 0
+    note = note:match("%a+")
   else
-    note = cipher
+    note = cipher:match("%a+")
+    octave = cipher:match("%d+") ~= nil and cipher:match("%d+") or 0
     amp = 1
   end
-  
-  octave = string.sub(note,(#note > 1) and -1 or 1):match("^%-?%d+$")
-  if octave then 
-    note = string.sub(note,1,string.find(note,octave)-1)
-  end  
 
-  -- cipher_to_midi = getValueForKey(ciphers,string.sub(note,1,(octave ~= nil) and -2 or 1))+(12*((octave ~= nil) and octave or 0))
-  cipher_to_midi = getValueForKey(ciphers,note)+(12*((octave ~= nil) and octave or 0))
-  
-  return toNoteAmp(tostring(cipher_to_midi)..AMP_SYMBOL..tostring(amp))
+  if getValueForKey(ciphers,note) then
+    cipher_to_midi = getValueForKey(ciphers, note) + (12 * octave)
+  else
+    return {0,0} -- cipher not matching error
+  end
+
+  return {cipher_to_midi, amp * 127}
 end
 
 local note = lpeg.R("09")^1
