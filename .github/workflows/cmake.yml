@@ -28,7 +28,7 @@ jobs:
     - name: line macOS Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: line_v0.7_macOS
+        name: line_v0.6.2_macOS
         path: ${{github.workspace}}/
   linux_build:
       runs-on: ubuntu-latest
@@ -38,7 +38,7 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive --remote
       - name: Build
-        run: ./build.sh
+        run: ./build_linux.sh
       - name: Remove build-only process files
         run: |
           rm -r ${{github.workspace}}/build/CMakeFiles
@@ -48,5 +48,5 @@ jobs:
       - name: line linux Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: line_v0.7_linux
+          name: line_v0.6.2_linux
           path: ${{github.workspace}}/

@@ -22,7 +22,15 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
-#include "externals/rtmidi/RtMidi.h"
+// #include "externals/rtmidi/RtMidi.h"
+#include "RtMidi.h"
+
+#if (__APPLE__)
+  #define __MACOSX_CORE__
+#endif
+#if (__linux__)
+  #define __LINUX_ALSA__
+#endif
 
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
@@ -41,7 +49,7 @@ const float DEFAULT_BPM = 60.0;
 const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 4; // 1 bar
 const char *PROMPT = "line>";
-const std::string VERSION = "0.7";
+const std::string VERSION = "0.6.2";
 const char REST_SYMBOL = '-';
 const uint8_t REST_VAL = 128;
 const uint64_t CTRL_RATE = 100000; // microseconds
@@ -91,7 +99,7 @@ class Parser {
   std::string restSymbol = {REST_SYMBOL};
   lua_State *L = luaL_newstate();
   std::string parserCode;
-  size_t tableSize,subtableSize,subsubtableSize;
+  uint16_t tableSize,subtableSize,subsubtableSize;
   std::string musicStructType;
 
   noteAmpT retreiveNoteAmp() const {
@@ -130,6 +138,8 @@ public:
     std::ifstream input (parserFile.c_str());
     textBuffer << input.rdbuf();
     parserCode = textBuffer.str();
+
+    std::cout << "parserCode->" << parserCode << std::endl;
   }
   ~Parser() {lua_close(L);};
 
@@ -138,13 +148,13 @@ public:
     lua_pop(L, 1); // remove error message from Lua's stack
     exit(EXIT_FAILURE);
   }
-
+  
   std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
     auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) +
      "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
 
     if (int luaError = luaL_dostring(L, parseRange.c_str()) == LUA_OK) {
-      lua_getglobal(L,"rs");
+      lua_getglobal(L,"rs");  
 
       if (lua_isstring(L,-1))
         _phrase = lua_tostring(L,-1);
@@ -301,7 +311,7 @@ std::vector<MidiEvent>* midiEvents = new std::vector<MidiEvent>();
 void displayCommandsList(std::string listVers="") {
   using namespace std;
   cout << "----------------------" << endl;
-  cout << "  line " << VERSION << " midi seq  " << endl;
+  cout << " line " << VERSION << " midi seq  " << endl;
   cout << "----------------------" << endl;
   cout << "..<[n] >    phrase    " << endl;
   cout << "..bpm<[n]>  bpm       " << endl;
@@ -418,7 +428,6 @@ phraseT xscramble(phraseT _phrase) {
     });
 
   std::shuffle(pattValues.begin(),pattValues.end(),std::default_random_engine(seed));
-
   for (auto& _subPhrase : _phrase)
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
       for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _v) {
@@ -426,7 +435,6 @@ phraseT xscramble(phraseT _phrase) {
         pattValues.pop_back();
       });
     });
-
   std::shuffle(_phrase.begin(),_phrase.end(),std::default_random_engine(seed));
 
   return _phrase;
@@ -467,7 +475,6 @@ phraseT xscrambleAmp() {
   auto _phrase = map([&](auto& _noteAmp){
      amps.emplace_back(_noteAmp.second);
   });
-
   std::shuffle(amps.begin(),amps.end(),std::default_random_engine(seed));
 
   _phrase = map([&](auto& _noteAmp){
@@ -537,7 +544,6 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
         std::string param;
         std::string _phrase;
         uint8_t countParams = 0;
-
         // [ load line instance params
         while (std::getline(file,param) && countParams < 5) {
           ++countParams;
@@ -933,7 +939,7 @@ int main(int argc, char **argv) {
 
             for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _phraseStr){outfile << _phraseStr << "\n";});
 
-            std::cout << "File " + filename + " saved.\n";
+            std::cout << "File " << filename + ".line" << " saved.\n";
           } catch (...) {
             std::cerr << "Invalid filename." << std::endl;
           }
@@ -968,7 +974,7 @@ int main(int argc, char **argv) {
               while (std::getline(file,_phrase))
                 prefPhrases.push_back(_phrase.c_str());
 
-              std::cout << "File loaded.\n";
+              std::cout << "File " << filename + ".line" << " loaded.\n";
             } else throw std::runtime_error("");
           } catch (...) {
             std::cerr << "Couldn't load file." << std::endl;

@@ -82,8 +82,7 @@ In command-line, type (1. as Admin) and Enter:
 
 3. `./line`
 
-<!--(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)
- -->
+<!--(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)-->
 **Now run your favorite synth, sampler, DAW, or other MIDI receiver!**
 
 ## Manual

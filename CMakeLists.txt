@@ -1,19 +1,27 @@
 cmake_minimum_required(VERSION 3.19.2)
 
 set(CMAKE_CXX_STANDARD 17)
-if(APPLE)
-  #set(CMAKE_C_COMPILER /usr/bin/clang)
-  #set(CMAKE_CXX_COMPILER /usr/bin/clang++)
-  #set(CMAKE_C_COMPILER /opt/local/libexec/llvm-10/bin/clang)
-  #set(CMAKE_CXX_COMPILER /opt/local/libexec/llvm-10/bin/clang++)
-endif(APPLE)
+    
+option(GIT_ACTION FALSE)
+option(BUILD_17 TRUE)
 
-if(LINUX)
-  #set(CMAKE_C_COMPILER /usr/bin/gcc)
-  #set(CMAKE_CXX_COMPILER /usr/bin/g++)
-endif(LINUX)
+if(APPLE AND NOT GIT_ACTION)
+  if(BUILD_17)
+    set(CMAKE_C_COMPILER /opt/local/libexec/llvm-10/bin/clang)
+    set(CMAKE_CXX_COMPILER /opt/local/libexec/llvm-10/bin/clang++)
+  else()  
+    set(CMAKE_C_COMPILER /usr/bin/clang)
+    set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+  endif()
+endif()
 
-project(line VERSION 0.7)
+if(LINUX AND NOT GIT_ACTION)
+  set(CMAKE_C_COMPILER /usr/bin/gcc)
+  set(CMAKE_CXX_COMPILER /usr/bin/g++)
+  set(RTMIDI_API_ALSA TRUE)
+endif()
+
+project(line VERSION 0.6.2)
 
 add_executable("${PROJECT_NAME}" line.cpp)
 
@@ -65,3 +73,9 @@ target_link_libraries(
   LINK_PRIVATE rtmidi
   Ableton::Link
 )
+
+# file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/parser/)
+# file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/lineparser.lua
+#     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/build/externals/parser)
+
+install(TARGETS ${PROJECT_NAME})
