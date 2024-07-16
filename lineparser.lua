@@ -1,4 +1,4 @@
-package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;../lib/liblpeg.dylib;../lib/liblpeg.so;/usr/local/lib/lib?.dylib;/usr/local/lib/lib?.so' .. package.cpath
+package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;lib/liblpeg.dylib;lib/liblpeg.so;/usr/local/lib/lib?.dylib;/usr/local/lib/lib?.so' .. package.cpath
 
 local lpeg = require 'lpeg'
 local write = io.write
