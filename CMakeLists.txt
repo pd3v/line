@@ -1,12 +1,7 @@
 cmake_minimum_required(VERSION 3.19.2)
 
 set(CMAKE_CXX_STANDARD 17)
-
-project(line VERSION 0.4.24)
     
-add_executable("${PROJECT_NAME}" line.cpp)
-
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/externals/readline)
 option(GIT_ACTION FALSE)
 option(BUILD_17 TRUE)
 

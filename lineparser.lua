@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-package.cpath = 'externals/?/lib?.dylib;expernals/?/?.so;' .. package.cpath
-=======
 package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;../lib/liblpeg.dylib;../lib/liblpeg.so;/usr/local/lib/lib?.dylib;/usr/local/lib/lib?.so' .. package.cpath
->>>>>>> ableton_link_integration
 
 local lpeg = require 'lpeg'
 local write = io.write
@@ -90,11 +86,7 @@ function getValueForKey(t,key)
 end
 
 function noteCipherToMidi(cipher)
-<<<<<<< HEAD
-  local note,amp
-=======
   local note, amp, octave
->>>>>>> ableton_link_integration
   ciphers = { c = 0,cf = 11,cs = 1,d = 2,df = 1,ds = 3,
               e = 4,ef = 3,f = 5,ff = 4,fs = 6,gf = 6,
               g = 7,gs = 8,af = 8,a = 9,as = 10,bf = 10,b = 11

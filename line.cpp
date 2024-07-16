@@ -21,9 +21,6 @@
 #include <regex>
 #include <readline/readline.h>
 #include <readline/history.h>
-<<<<<<< HEAD
-#include "externals/rtmidi/RtMidi.h"
-=======
 #include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
 // #include "externals/rtmidi/RtMidi.h"
 #include "RtMidi.h"
@@ -34,7 +31,6 @@
 #if (__linux__)
   #define __LINUX_ALSA__
 #endif
->>>>>>> ableton_link_integration
 
 #if defined(LINK_PLATFORM_UNIX)
 #include <termios.h>
@@ -50,20 +46,6 @@ using noteAmpT = std::pair<uint8_t,uint8_t>;
 using phraseT = std::vector<std::vector<std::vector<noteAmpT>>>;
 
 const float DEFAULT_BPM = 60.0;
-<<<<<<< HEAD
-const uint16_t REF_BAR_DUR = 4000; // milliseconds
-const float REF_BEAT_DUR = 0.25; // 1/4 note
-const char *PROMPT = "line>";
-const char *PREPEND_CUSTOM_PROMPT = "_";
-const std::string VERSION = "0.4.24";
-const char REST_SYMBOL = '-';
-const uint8_t REST_VAL = 128;
-const uint8_t CTRL_RATE = 100; // milliseconds
-std::string filenameDefault = "line";
-const long iterDur = 5; // milliseconds
-uint8_t bpm = DEFAULT_BPM;
-long barDur = REF_BAR_DUR;
-=======
 const uint64_t REF_BAR_DUR = 4000000; // microseconds
 const float REF_QUANTUM = 4; // 1 bar
 const char *PROMPT = "line>";
@@ -77,7 +59,6 @@ std::string filenameDefault = "line";
 
 double bpm = DEFAULT_BPM;
 double quantum = REF_QUANTUM;
->>>>>>> ableton_link_integration
 float amplitude = 127.;
 uint8_t ch=0, ccCh=0;
 bool muted = false;
@@ -85,9 +66,6 @@ std::pair<float,float> range{0,127};
 phraseT phrase{};
 std::string phraseStr;
 std::deque<std::string> prefPhrases{};
-<<<<<<< HEAD
-double beatsPerPhrase = barDur/(REF_BAR_DUR*REF_BEAT_DUR);
-=======
 double toNextBar = 0;
 bool commandHasPhrase = false; // command(s) is added to history only if it has a phrase in it. Arggg!
 
@@ -116,7 +94,6 @@ void enableBufferedInput() {
   tcsetattr(STDIN_FILENO, TCSANOW, &t);
 #endif
 }
->>>>>>> ableton_link_integration
 
 class Parser {
   std::string restSymbol = {REST_SYMBOL};
@@ -165,22 +142,13 @@ public:
     std::cout << "parserCode->" << parserCode << std::endl;
   }
   ~Parser() {lua_close(L);};
-<<<<<<< HEAD
-  
-  void reportErrors(lua_State *L, int status) {
-=======
 
   void reportLuaErrorsOnExit(lua_State *L, int status) {
->>>>>>> ableton_link_integration
     printf("--- %s\n", lua_tostring(L, -1));
     lua_pop(L, 1); // remove error message from Lua's stack
     exit(EXIT_FAILURE);
   }
-<<<<<<< HEAD
   
-=======
-
->>>>>>> ableton_link_integration
   std::string rescaling(std::string _phrase, std::pair<float,float> _range) {
     auto parseRange = parserCode + " range_min =\"" + std::to_string(_range.first) +  "\" ;range_max=\"" + std::to_string(_range.second) +
      "\" ;rs = table.concat(lpeg.match(rangeG,\"" + _phrase + "\"),\" \")";
@@ -213,13 +181,8 @@ public:
         lua_gettable(L,-2);
         tableSize = lua_rawlen(L,-2);
         int8_t note, amp;
-<<<<<<< HEAD
-      
-        for (uint16_t i=0; i<tableSize; ++i) {
-=======
 
         for (int i=0; i<tableSize; ++i) {
->>>>>>> ableton_link_integration
           musicStructNumIter();
 
           if (musicStructType == "n") {
@@ -233,15 +196,9 @@ public:
               lua_pop(L,2);
             }
           } else if (musicStructType == "s") {
-<<<<<<< HEAD
-              uint16_t _stabsize = lua_rawlen(L,-2);
-              
-              for (uint16_t i=0; i<_stabsize; ++i) {
-=======
               size_t _stabsize = lua_rawlen(L,-2);
 
               for (int i=0; i<_stabsize; ++i) {
->>>>>>> ableton_link_integration
                 musicStructNumIter();
 
                 if (musicStructType == "n") {
@@ -296,24 +253,12 @@ public:
         }
       }
     } else
-<<<<<<< HEAD
-      reportErrors(L, luaError);
-    
-=======
         reportLuaErrorsOnExit(L, luaError);
 
->>>>>>> ableton_link_integration
     return v;
   }
 } parser;
 
-<<<<<<< HEAD
-uint16_t barToMs(const int16_t bpm, const uint16_t barDur) {
-  return DEFAULT_BPM/bpm*barDur;
-}
-
-void displayOptionsMenu(std::string menuVers="") {
-=======
 struct MidiEvent {
   const std::vector<noteAmpT> notes;
   const float startTime;
@@ -364,7 +309,6 @@ struct MidiEvent {
 std::vector<MidiEvent>* midiEvents = new std::vector<MidiEvent>();
 
 void displayCommandsList(std::string listVers="") {
->>>>>>> ableton_link_integration
   using namespace std;
   cout << "----------------------" << endl;
   cout << " line " << VERSION << " midi seq  " << endl;
@@ -395,32 +339,18 @@ void displayCommandsList(std::string listVers="") {
     cout << "..rr<[n]>   rotate right" << endl;
     cout << "..mi<[n]>   range min" << endl;
     cout << "..ma<[n]>   range max" << endl;
-<<<<<<< HEAD
-    cout << "..*<[n]>    concat phrs" << endl;
-    cout << "../<[n]>    phr dur" << endl;
-=======
     cout << "..*<[n]>    concat phr" << endl;
     cout << "../<[n]>    prolong phr" << endl;
->>>>>>> ableton_link_integration
     cout << "..sp        save phr @ 0" << endl;
     cout << "..sp<[n]>   save phr @ n" << endl;
     cout << "..:<[n]>    load phr @ n" << endl;
     cout << "..l         list sp phrs" << endl;
-<<<<<<< HEAD
-    cout << "..sf<[a|n]> save .line file" << endl;
-    cout << "..lf<[a|n]> load .line file" << endl;
-  }
-  cout << "----------------------" << endl;
-  
-  if (rand()%5 == 1) cout << "          author:pd3v" << endl;
-=======
     cout << "..sf<name>  save file" << endl;
     cout << "..lf<name>  load file" << endl;
   }
   cout << "----------------------" << endl;
 
   if (/*int r = */rand()%5 == 1) cout << "          author:pd3v" << endl;
->>>>>>> ableton_link_integration
 }
 
 void amp(float& amplitude) {
@@ -498,11 +428,6 @@ phraseT xscramble(phraseT _phrase) {
     });
 
   std::shuffle(pattValues.begin(),pattValues.end(),std::default_random_engine(seed));
-<<<<<<< HEAD
-  
-=======
-
->>>>>>> ableton_link_integration
   for (auto& _subPhrase : _phrase)
     for_each(_subPhrase.begin(),_subPhrase.end(),[&](auto& _subsubPhrase) {
       for_each(_subsubPhrase.begin(),_subsubPhrase.end(),[&](auto& _v) {
@@ -510,11 +435,6 @@ phraseT xscramble(phraseT _phrase) {
         pattValues.pop_back();
       });
     });
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> ableton_link_integration
   std::shuffle(_phrase.begin(),_phrase.end(),std::default_random_engine(seed));
 
   return _phrase;
@@ -555,11 +475,6 @@ phraseT xscrambleAmp() {
   auto _phrase = map([&](auto& _noteAmp){
      amps.emplace_back(_noteAmp.second);
   });
-<<<<<<< HEAD
-     
-=======
-
->>>>>>> ableton_link_integration
   std::shuffle(amps.begin(),amps.end(),std::default_random_engine(seed));
 
   _phrase = map([&](auto& _noteAmp){
@@ -601,9 +516,6 @@ phraseT replicate(phraseT _phrase,uint8_t times) {
 
   return nTimesPhrase;
 }
-<<<<<<< HEAD
- 
-=======
 
 const uint64_t barToMs(const double _bpm, const uint64_t _barDur) {
   return DEFAULT_BPM / _bpm * _barDur;
@@ -616,19 +528,13 @@ void bpmLink(double _bpm) {
   barDur = barToMs(_bpm, REF_BAR_DUR);
 }
 
->>>>>>> ableton_link_integration
 std::string prompt = PROMPT;
 
 std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, char **argv) {
   // line args order: notes/cc ch label range_min range_max
   std::tuple<bool,uint8_t,const char*,float,float> lineParams{true,0,PROMPT,0,127};
-<<<<<<< HEAD
-
-  if (argc == 2) { // Maybe a loadable .line file 
-=======
   
   if (argc == 2) { // Maybe a loadable .line file
->>>>>>> ableton_link_integration
     try {
       std::string filename = argv[1];
       std::ifstream file(filename + ".line");
@@ -638,32 +544,12 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
         std::string param;
         std::string _phrase;
         uint8_t countParams = 0;
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> ableton_link_integration
         // [ load line instance params
         while (std::getline(file,param) && countParams < 5) {
           ++countParams;
           params.push_back(param);
         }
 
-<<<<<<< HEAD
-        lineParams = {(params.at(0) == "0" ? false : true),std::stoi(params.at(1)),
-          (PREPEND_CUSTOM_PROMPT+params.at(2)+">").c_str(),
-          std::stof(params.at(3)),
-          std::stof(params.at(4))
-        };
-        // --- ]
-
-        while (std::getline(file,_phrase))
-          prefPhrases.push_back(_phrase.c_str());
-        
-        file.close();
-
-        std::cout << "File " << filename + ".line" << " loaded.\n";
-=======
         auto labelAsPrompt = (params.at(2) + ">");
         lineParams = std::make_tuple((params.at(0) == "0" ? false : true),std::stoi(params.at(1)),
           std::move(labelAsPrompt.c_str()),
@@ -676,7 +562,6 @@ std::tuple<bool,uint8_t,const char*,float,float> lineParamsOnStart(int argc, cha
           prefPhrases.push_back(_phrase.c_str());
         
         std::cout << "File loaded.\n";
->>>>>>> ableton_link_integration
       } else throw std::runtime_error("");
     } catch(...) {
       std::cout << "Cound't load file.\n" << std::flush;
@@ -794,10 +679,6 @@ int main(int argc, char **argv) {
 
   bool isSoundingThread = false;
   bool exit = false;
-<<<<<<< HEAD
-  
-  noteMessage.push_back(0);
-=======
 
   State state;
   const auto tempo = state.link.captureAppSessionState().tempo();
@@ -806,17 +687,11 @@ int main(int argc, char **argv) {
   state.link.setTempoCallback(bpmLink);
 
   noteMessage.push_back(0x80);
->>>>>>> ableton_link_integration
   noteMessage.push_back(0);
   noteMessage.push_back(0);
   
   auto sequencer = async(std::launch::async, [&](){
     phraseT _phrase{};
-<<<<<<< HEAD
-    uint8_t _ch = ch;
-    uint8_t _ccCh = ccCh;
-    bool _rNotes = rNotes;
-=======
     std::vector<MidiEvent>* _midiEvents = new std::vector<MidiEvent>();
 
     const bool linkEnabled = state.link.isEnabled();
@@ -824,7 +699,6 @@ int main(int argc, char **argv) {
     quantum = state.audioPlatform.mEngine.quantum();
     const bool startStopSyncOn = state.audioPlatform.mEngine.isStartStopSyncEnabled();
     // const double late = state.audioPlatform.mEngine.outputLatency; // just a reminder of latency info available in engine
->>>>>>> ableton_link_integration
 
     toNextBar = barEndTimeRef();
 
@@ -832,60 +706,6 @@ int main(int argc, char **argv) {
     std::unique_lock<std::mutex> lckWait(mtxWait);
     cv.wait(lckWait, [&](){return isSoundingThread;});
     std::lock_guard<std::mutex> lckPhrase(mtxPhrase);
-<<<<<<< HEAD
-    
-    while (soundingThread) {
-      if (!phrase.empty()) {
-        _phrase = phrase;
-        _ch = ch;
-        _ccCh = ccCh;
-        _rNotes = rNotes;
-
-        if (_rNotes) {
-          for (auto& subPhrase : _phrase) {
-            for (auto& subsubPhrase : subPhrase) {
-              for (auto& notes : subsubPhrase) {
-                noteMessage[0] = 144+_ch;
-                noteMessage[1] = notes.first;
-                noteMessage[2] = ((notes.first == REST_VAL) || muted) ? 0 : notes.second;
-                midiOut.sendMessage(&noteMessage);
-              }
-              std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
-              for (auto& notes : subsubPhrase) {  
-                noteMessage[0] = 128+_ch;
-                noteMessage[1] = notes.first;
-                noteMessage[2] = 0;
-                midiOut.sendMessage(&noteMessage);
-              }
-            }
-          }
-        } else
-          if (sync) {
-            for (auto& subPhrase : _phrase) {
-              for (auto& subsubPhrase : subPhrase) {
-                for (auto& ccValues : subsubPhrase) {
-                  noteMessage[0] = 176+_ch;
-                  noteMessage[1] = _ccCh;
-                  noteMessage[2] = ccValues.first;
-                  midiOut.sendMessage(&noteMessage);
-                }
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<unsigned long>(barDur/_phrase.size()/subPhrase.size()-iterDur)));
-              }
-            }
-          } else {
-            for (auto& subPhrase : _phrase) {
-              for (auto& subsubPhrase : subPhrase) {
-                for (auto& ccValues : subsubPhrase) {
-                  noteMessage[0] = 176+_ch;
-                  noteMessage[1] = _ccCh;
-                  noteMessage[2] = ccValues.first;
-                  midiOut.sendMessage(&noteMessage);
-                } 
-                std::this_thread::sleep_for(std::chrono::milliseconds(CTRL_RATE));
-              }
-            }
-          } 
-=======
 
     state.link.enable(true);
 
@@ -906,7 +726,6 @@ int main(int argc, char **argv) {
           for_each(_midiEvents->begin(), _midiEvents->end(), [&](MidiEvent& _midiEvent){_midiEvent.ccPlayStop(phase, noteMessage, midiOut);});
 
         std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>(4000)));
->>>>>>> ableton_link_integration
       } else break;
     }
     for_each(_midiEvents->begin(), _midiEvents->end(), [&](MidiEvent& _midiEvent){_midiEvent.stop(noteMessage, midiOut);});
@@ -919,20 +738,6 @@ int main(int argc, char **argv) {
 
   std::cout << "line " << VERSION << " is on." << std::endl << "Type \"ls\" for commands short list; \"le\" for extended." << std::endl;
 
-<<<<<<< HEAD
-  while (!exit) {
-    opt = readline(prompt.c_str());
-    
-    if (!opt.empty()) {
-      if (opt == "ms") {
-        displayOptionsMenu("");
-      } else if (opt == "me") {
-        displayOptionsMenu(opt);
-      } else if (opt.substr(0,2) == "ch") {
-          if (opt.length() > strlen("ch"))
-            try {
-              ch = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
-=======
 
   std::function<void(std::string&)> parseCommands = [&](auto& _opt){
     if (!_opt.empty()) {
@@ -945,35 +750,11 @@ int main(int argc, char **argv) {
             try {
               ch = std::abs(std::stoi(_opt.substr(2,_opt.size()-1)));
               timeStamping(phrase);
->>>>>>> ableton_link_integration
             }
             catch (...) {
               std::cerr << "Invalid channel.\n";
             }
           else
-<<<<<<< HEAD
-            std::cout << (int)ch << '\n';  
-      } else if (opt == "n") {
-          rNotes = true;
-          phrase.clear();
-          phrase.push_back({{{REST_VAL,0}}});
-      } else if (opt.substr(0,2) == "cc") {
-          if (opt.length() > strlen("cc"))
-            try {
-              ccCh = std::abs(std::stoi(opt.substr(2,opt.size()-1)));
-              rNotes = false;
-            }
-            catch (...) {
-              std::cerr << "Invalid cc channel." << std::endl; 
-            }
-          else
-            std::cout << (int)ccCh << '\n';
-      } else if (opt.substr(0,3) == "bpm") {
-          if (opt.length() > strlen("bpm"))
-            try {
-              bpm = std::abs(std::stoi(opt.substr(3,opt.size()-1)));
-              barDur = barToMs(bpm,REF_BAR_DUR);
-=======
             std::cout << (int)ch << '\n';
       } else if (_opt == "n") {
           rNotes = true;
@@ -998,25 +779,10 @@ int main(int argc, char **argv) {
               quantum = REF_QUANTUM;
               barDur = barToMs(bpm, REF_BAR_DUR);
               toNextBar = barEndTimeRef();
->>>>>>> ableton_link_integration
             } catch (...) {
               std::cerr << "Invalid bpm." << std::endl;
             }
           else
-<<<<<<< HEAD
-            std::cout << (int)bpm << '\n';
-      } else if (opt.substr(0,1) == "/") {
-          if (opt.length() > strlen("/"))
-            try {
-              beatsPerPhrase = static_cast<double>(std::stof(opt.substr(1,opt.size()-1)));
-              barDur = barToMs(bpm,beatsPerPhrase*REF_BEAT_DUR*REF_BAR_DUR);
-            } catch (...) {
-              std::cerr << "Invalid phrase duration." << std::endl; 
-            }
-          else
-            std::cout << beatsPerPhrase << '\n';       
-      } else if (opt == "ex") {
-=======
             std::cout << bpm << '\n';
       } else if (_opt.substr(0,1) == "/") {
           if (_opt.length() > strlen("/"))
@@ -1031,7 +797,6 @@ int main(int argc, char **argv) {
           else
             std::cout << quantum / REF_QUANTUM << '\n';
       } else if (_opt == "ex") {
->>>>>>> ableton_link_integration
           phrase.clear();
           isSoundingThread = true;
           cv.notify_one();
@@ -1117,48 +882,6 @@ int main(int argc, char **argv) {
         uint8_t i = 0;
         for_each(prefPhrases.begin(),prefPhrases.end(),[&](std::string _p) {
           std::cout << "[" << (int)i++ << "] " << _p << std::endl;
-<<<<<<< HEAD
-        });  
-      } else if (opt == "i") {    
-          sync= true;
-      } else if (opt == "o") {    
-          sync= false;
-      } else if (opt.substr(0,2) == "mi") {    
-          if (opt.length() > strlen("mi"))
-            try {
-              range.first = std::stof(opt.substr(2,opt.size()-1));
-            } catch (...) {
-              std::cerr << "Invalid range min." << std::endl; 
-            }
-          else
-            std::cout << range.first << '\n';  
-      } else if (opt.substr(0,2) == "ma") {    
-          if (opt.length() > strlen("ma"))
-            try {
-              range.second = std::stof(opt.substr(2,opt.size()-1));
-            } catch (...) {
-              std::cerr << "Invalid range max." << std::endl; 
-            }
-          else
-            std::cout << range.second << '\n';
-      } else if (opt.substr(0,1) == "*") {
-          static uint8_t times = 1;
-          if (opt.length() > strlen("*")) 
-            try {
-              times = static_cast<int>(std::stof(opt.substr(1,opt.size()-1)));
-
-              if (times == 0)
-                throw std::runtime_error(""); 
-          
-              phrase = multiplier(phrase,times);
-            } catch (...) {
-              std::cerr << "Invalid phrase multiplier." << std::endl; 
-            }
-          else
-            std::cout << (int)times << '\n';        
-      } else if (opt.substr(0,2) == "lb") {    
-          // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+opt.substr(2,opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
-=======
         });
       } else if (_opt == "i") {
           sync = true;
@@ -1196,7 +919,6 @@ int main(int argc, char **argv) {
           }
       } else if (_opt.substr(0,2) == "lb") {
           // prompt = _prompt.substr(0,_prompt.length()-1)+"~"+_opt.substr(2,_opt.length()-1)+_prompt.substr(_prompt.length()-1,_prompt.length()); formats -> line~<newlable>
->>>>>>> ableton_link_integration
           prompt = PROMPT;
 
           if (_opt.length() > 2) {
@@ -1292,8 +1014,4 @@ int main(int argc, char **argv) {
   }
 
   return 0;
-<<<<<<< HEAD
-}
-=======
 } 
->>>>>>> ableton_link_integration
