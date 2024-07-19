@@ -1,8 +1,10 @@
-package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;lib/liblpeg.dylib;lib/liblpeg.so;/usr/local/lib/lib?.dylib;/usr/local/lib/lib?.so' .. package.cpath
+print ("Loaded!")
+--[[package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;lib/lib?.dylib;lib/lib?.so;/usr/local/lib/lib?.dylib;/usr/local/lib/lib?.so' .. package.cpath
 
 local lpeg = require 'lpeg'
 local write = io.write
 lpeg.locale(lpeg)
+print(lpeg, "loaded?!")
 
 local AMP_SYMBOL = "~"
 local NO_MATCH = {{'e', {{255,0}}}}
@@ -149,3 +151,4 @@ local rangeG = lpeg.P {"prange",
   prange = lpeg.Ct(lpeg.Cg(((V"range")^1 * (sep^1 * V"range")^0)^1));
   range = rangeP;
 } * -1
+]]

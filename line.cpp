@@ -139,7 +139,7 @@ public:
     textBuffer << input.rdbuf();
     parserCode = textBuffer.str();
 
-    std::cout << "parserCode->" << parserCode << std::endl;
+    // std::cout << "parserCode->" << parserCode << std::endl;
   }
   ~Parser() {lua_close(L);};
 
@@ -169,8 +169,10 @@ public:
     std::vector<std::vector<noteAmpT>> subv{};
     std::vector<noteAmpT> subsubv{};
 
-    auto p = parserCode + " phrs_matching = lpeg.match(phraseG, \"" + _phrase +
-    "\"); t = phrs_matching and phrs_matching or NO_MATCH";
+    // auto p = parserCode + " phrs_matching = lpeg.match(phraseG, \"" + _phrase +
+    // "\"); t = phrs_matching and phrs_matching or NO_MATCH";
+
+    auto p = parserCode;
 
     if (int luaError = luaL_dostring(L, p.c_str()) == LUA_OK) {
       lua_getglobal(L, "t");
