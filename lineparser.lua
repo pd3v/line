@@ -1,5 +1,4 @@
-print ("Loaded!")
---[[package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;lib/lib?.dylib;lib/lib?.so;/usr/local/lib/lib?.dylib;/usr/local/lib/lib?.so' .. package.cpath
+package.cpath = 'externals/?/lib?.dylib;externals/?/lib?.so;lib/lib?.dylib;lib/lib?.so;/usr/local/lib/lib?.dylib;/usr/local/lib/lib?.so' .. package.cpath
 
 local lpeg = require 'lpeg'
 local write = io.write
@@ -151,4 +150,3 @@ local rangeG = lpeg.P {"prange",
   prange = lpeg.Ct(lpeg.Cg(((V"range")^1 * (sep^1 * V"range")^0)^1));
   range = rangeP;
 } * -1
-]]
