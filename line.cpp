@@ -1,4 +1,4 @@
-//
+e//
 //  line - tiny command-line MIDI sequencer for live coding
 //
 //  Created by @pd3v_
@@ -23,7 +23,6 @@
 #include <readline/history.h>
 #include "externals/link/examples/linkaudio/AudioPlatform_Dummy.hpp"
 #include "externals/rtmidi/RtMidi.h"
-// #include "RtMidi.h"
 
 #if (__APPLE__)
   #define __MACOSX_CORE__
@@ -176,6 +175,8 @@ public:
 
     if (int luaError = luaL_dostring(L, p.c_str()) == LUA_OK) {
       lua_getglobal(L, "t");
+
+      std::cout << "lua parser loaded\n";
 
       // 3D Lua table to c++ vector
       if (lua_istable(L,-1)) {
