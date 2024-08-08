@@ -16,7 +16,8 @@ To some videos live coding with it [go here.](https://twitter.com/search?q=%23li
 
 #### Up-to-date Mac/Intel and Linux builds
 
-+ [Download them from https://pd3v.github.io/downloads](https://pd3v.github.io/downloads)
++ <a href="https://pd3v.github.io/downloads" target="_blank">Download them from https://pd3v.github.io/downloads</a>
+
 + Go to the **build** folder, type `./line` and press Enter
 
 <!--#### There's a Mac/M1/M2 build ready
