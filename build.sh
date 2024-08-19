@@ -4,12 +4,14 @@ mkdir build
 cd build
 
 # Not using JACK
-cmake -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTAUDIO_API_JACK=OFF -DRTAUDIO_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF  ..
+cmake -Wall -DCMAKE_BUILD_TYPE=Release -DRTMIDI_API_JACK=OFF -DRTMIDI_BUILD_TESTING=OFF  ..
 
 # Using JACK
 # cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DRTMIDI_BUILD_TESTING=OFF ..
 
 make
+
+chmod +x line
 
 # Remove unnecessary files after build done
 # rm -r externals/ 
