@@ -1,4 +1,20 @@
-<!--**Most recent upgrades**-->
+
+## 0.7
+
+. temporal transforming by concatening char `_` after commands
+
+. \<command>`_` will repeat the command definitely
+
+. \<command>`_`\<number> will repeat the command x number
+
+---
+
+## 0.6.2
+  
+  . '<' to compose commands in one line
+
+----  
+
 ## 0.6.1
 
 . `ga`command generates random amplitudes for each and every note in the playing phrase
