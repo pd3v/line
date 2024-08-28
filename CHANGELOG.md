@@ -3,7 +3,7 @@
 
 . temporal transforming by concatening char `_` after commands
 
-. \<command>`_` will repeat the command definitely
+. \<command>`_` will repeat the command indefinitely
 
 . \<command>`_`\<number> will repeat the command x number
 
