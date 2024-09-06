@@ -684,7 +684,7 @@ void timeStamping(phraseT _phrase) {
   midiEvents = std::move(_midiEvents);
 }
 
-void temporalFIFOCommands(const float& _currentTime, double _executeTime, std::deque<LineCommand>& _queuedCmds, std::function<bool(std::string&)>& _execCommand) {
+void FIFOingCommands(const float& _currentTime, double _executeTime, std::deque<LineCommand>& _queuedCmds, std::function<bool(std::string&)>& _execCommand) {
   std::atomic<bool> runThrough{false};
   const float TIME_OFFSET = 0.002;
 
@@ -762,7 +762,7 @@ int main(int argc, char **argv) {
         if (phase >= toNextBar && midiEvents != nullptr)
           _midiEvents = std::move(midiEvents);
         
-        temporalFIFOCommands(phase, quantum, quededCommands, execCommand);
+        FIFOingCommands(phase, quantum, quededCommands, execCommand);
         
         if (rNotes)
           for_each(_midiEvents->begin(), _midiEvents->end(), [&](MidiEvent& _midiEvent){_midiEvent.notesPlayStop(phase, noteMessage, midiOut);});
@@ -1039,7 +1039,7 @@ int main(int argc, char **argv) {
     quededCommands.clear();
     quededCommands = splitCommands(opt);
     
-    temporalFIFOCommands(quantum * 0.5000,quantum,quededCommands, execCommand);
+    FIFOingCommands(quantum * 0.5000,quantum,quededCommands, execCommand);
     
     add_history(opt.c_str());
   }
