@@ -1,11 +1,11 @@
 
 ## 0.7
 
-. temporal transforming by concatening char `_` after commands
+. temporal phrase transforming by concatening character `_` after commands
 
 . \<command>`_` will repeat the command indefinitely
 
-. \<command>`_`\<number> will repeat the command x number
+. \<command>`_`\<number> will repeat the command a _number_ of times
 
 ---
 
