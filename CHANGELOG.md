@@ -1,9 +1,19 @@
+
+## 0.7
+
+. temporal phrase transforming by concatening character `_` after commands
+
+. \<command>`_` will repeat the command indefinitely
+
+. \<command>`_`\<number> will repeat the command a _number_ of times
+
+---
+
 ## 0.6.2
+  
+  . '<' to compose commands in one line
 
-. `<` to combine multiple commands in one line command
-
-____
-
+----  
 
 ## 0.6.1
 

@@ -20,7 +20,7 @@ if(LINUX AND GIT_ACTION)
   set(CMAKE_CXX_COMPILER /usr/bin/g++)
 endif()
 
-project(line VERSION 0.6.2)
+project(line VERSION 0.7)
 
 add_executable("${PROJECT_NAME}" line.cpp)
 
