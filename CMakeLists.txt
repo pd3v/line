@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.19.2)
 
 set(CMAKE_CXX_STANDARD 17)
 
-option(GIT_ACTION FALSE)
-option(BUILD_17 TRUE)
+option(GIT_ACTION "Is Git Action" OFF)
+option(BUILD_17 "Building as C++17" ON)
 
 if(APPLE AND NOT GIT_ACTION)
   if(BUILD_17)
@@ -12,7 +12,7 @@ if(APPLE AND NOT GIT_ACTION)
   else()  
     set(CMAKE_C_COMPILER /usr/bin/clang)
     set(CMAKE_CXX_COMPILER /usr/bin/clang++)
-  endif(BUILD_17)
+  endif()
 endif()
 
 if(LINUX AND GIT_ACTION)
