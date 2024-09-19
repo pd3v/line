@@ -14,17 +14,23 @@ To some videos live coding with it [go here.](https://twitter.com/search?q=%23li
 ---
 ### MacOS ready-to-run builds
 
-#### There's a Mac/M1/M2 build ready
+#### Up-to-date Mac/Intel and Linux builds
+
++ <a href="https://pd3v.github.io/downloads" target="_blank">Download them from https://pd3v.github.io/downloads</a>
++ Go to the **build** folder, type `./line` and press Enter
+
+<!--#### There's a Mac/M1/M2 build ready
 
 + Go to [Actions page](https://github.com/pd3v/line/actions) > latest workflow run > section *Artifacts*, download and unzip the file
 + Go to the **build** folder, type `./line` and press Enter
+-->
 
 #### There's a Mac/Intel build ready
 
 + Just unzip **line_0.5.25_ablt_lnk_Mac_Intel_build.zip** file
 + Go to the **build** folder, type `./line` and press Enter
 
-### What you need to build *line*
+### What you need to build *line* yourself
 
 + **readline** library (should be already on your system, if not, you have to install it)
 + **jack** library (**only** for Linux. It is not installed by default. If the computer has no audio/music production sofware succefully used then a *jack* installation is needed)
@@ -38,43 +44,13 @@ To some videos live coding with it [go here.](https://twitter.com/search?q=%23li
 
 `git clone --recursive https://github.com/pd3v/line.git`
 
-<!--### To build and run *line* 
- 
- #### Install lua language and lpeg (used for parsing) first
- 
- ##### MacOS, Linux or Windows 
- 
- After installing *[luarocks](https://luarocks.org/#quick-start)* package manager
- 
- In command-line, type and Enter:
- 
- `luarocks install lpeg` 
- 
- <!-- ###### On MacOS with *macports*
- 
- `port search --name --glob 'lua' ` 
- 
- `sudo port install lua @5.3.5` // 5.3.5 or other version
- 
- ###### On Ubuntu/Debian*
- 
- `sudo apt install lua5.3` // 5.3 or other version
- 
- ###### On Windows* with *Chocolatey*
- 
- `choco install lua`
- 
- (an alternative for installation would be *Luarocks* package manager)
- 
- \* Didn't tried it out -->
-
-#### Build and run *line*
+#### Build and run *line* yourself
 
 (CMake is necessary)
 
 + Go to *line*'s folder
 
-In command-line, type (1. as Admin) and Enter:
+In command-line, type each of the following + Enter:
 
 1. `./build.sh` 
 
@@ -82,7 +58,6 @@ In command-line, type (1. as Admin) and Enter:
 
 3. `./line`
 
-<!--(alternatively try MacOS' *macports* or *homebrew*, or Windows' Chocolatey package managers)-->
 **Now run your favorite synth, sampler, DAW, or other MIDI receiver!**
 
 ## Manual

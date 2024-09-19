@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.19.2)
 
 set(CMAKE_CXX_STANDARD 17)
-    
-option(GIT_ACTION FALSE)
-option(BUILD_17 TRUE)
+
+option(GIT_ACTION "Is Git Action" OFF)
+option(BUILD_17 "Building as C++17" ON)
 
 if(APPLE AND NOT GIT_ACTION)
   if(BUILD_17)
@@ -21,7 +21,7 @@ if(LINUX AND NOT GIT_ACTION)
   set(RTMIDI_API_ALSA TRUE)
 endif()
 
-project(line VERSION 0.6.2)
+project(line VERSION 0.7)
 
 add_executable("${PROJECT_NAME}" line.cpp)
 
